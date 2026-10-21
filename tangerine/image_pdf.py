@@ -184,7 +184,7 @@ def _reserve_output(
     candidate: Path,
     explicit: bool,
     reserved: set[Path],
-) -> tuple[Path, tuple[int, int]]:
+) -> tuple[Path, tuple[int, int, bytes]]:
     """Claim a sibling name and return its path plus the placeholder file identity."""
     from .engines import EngineError
 
@@ -211,26 +211,36 @@ def _reserve_output(
                 continue
             else:
                 try:
+                    marker = os.urandom(32)
+                    if os.write(descriptor, marker) != len(marker):
+                        raise OSError("Could not write the PDF output reservation marker")
                     identity = os.fstat(descriptor)
                 finally:
                     os.close(descriptor)
                 reserved.add(path)
-                return path, (identity.st_dev, identity.st_ino)
+                return path, (identity.st_dev, identity.st_ino, marker)
 
 
-def _owns_output_reservation(path: Path, identity: tuple[int, int]) -> bool:
+def _owns_output_reservation(path: Path, identity: tuple[int, int, bytes]) -> bool:
     """Check the reserved directory entry still refers to our placeholder."""
+    descriptor = None
     try:
-        current = path.lstat()
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(path, flags)
+        current = os.fstat(descriptor)
+        marker = os.read(descriptor, len(identity[2]))
     except OSError:
         return False
-    return (current.st_dev, current.st_ino) == identity
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+    return (current.st_dev, current.st_ino, marker) == identity
 
 
 def _replace_with_retry(
     source: Path,
     destination: Path,
-    reservation: tuple[int, int],
+    reservation: tuple[int, int, bytes],
     ctx: Ctx,
 ) -> None:
     """Atomically publish a PDF, retrying only transient Windows sharing errors."""
@@ -290,7 +300,7 @@ def create_image_pdf(
     pages: list[Image.Image] = []
     pdf_pages: list[Image.Image] = []
     output: Path | None = None
-    reservation: tuple[int, int] | None = None
+    reservation: tuple[int, int, bytes] | None = None
     temp_path: Path | None = None
     published = False
     try:

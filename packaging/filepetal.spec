@@ -30,7 +30,7 @@ def _read_app_version(repo_root):
     with open(paths_py, "r", encoding="utf-8") as handle:
         text = handle.read()
     match = re.search(r'^APP_VERSION\s*=\s*["\']([^"\']+)["\']', text, re.MULTILINE)
-    return match.group(1) if match else "1.11.0"
+    return match.group(1) if match else "1.11.1"
 
 
 def _version_quad(version):

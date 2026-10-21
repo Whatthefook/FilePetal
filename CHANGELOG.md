@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.11.1 — 2026-10-21
+
+- Refuerza la reserva exclusiva de PDF en Linux, además de Windows, para evitar
+  sobrescribir archivos ajenos cuando el sistema reutiliza identificadores.
+- Añade `libpulse0` al entorno de compilación Linux y documenta la dependencia
+  para ejecutar el paquete portable.
+- Verifica los paquetes nativos de Windows x64, macOS Apple silicon, macOS Intel
+  y Linux x64 con pruebas automatizadas y un smoke test empaquetado de PDF.
+
 ## 1.11.0 — 2026-10-21
 
 - Añade paquetes ZIP para Windows x64, Linux x64 y macOS Intel/Apple silicon.

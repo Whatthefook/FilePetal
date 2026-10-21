@@ -2,14 +2,14 @@
 ; FilePetal for Windows - Inno Setup 6 installer script
 ;
 ; Compile:
-;     ISCC.exe /DAPPVER=1.11.0 packaging\installer.iss
+;     ISCC.exe /DAPPVER=1.11.1 packaging\installer.iss
 ;
 ; Produces: FilePetal-Setup.exe
 ; Per-user install, no UAC prompt, no admin rights required.
 ; ---------------------------------------------------------------------------
 
 #ifndef APPVER
-  #define APPVER "1.11.0"
+  #define APPVER "1.11.1"
 #endif
 
 #ifndef BUNDLEDIR

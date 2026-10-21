@@ -42,7 +42,7 @@ Omit `-SkipInstaller` to create the optional per-user Inno Setup installer when 
 ## Publish a GitHub release
 
 1. Set `APP_VERSION` in `tangerine/paths.py` and commit all release source changes to `main`.
-2. Push an annotated version tag that matches it, such as `v1.11.0` for `APP_VERSION = "1.11.0"`.
+2. Push an annotated version tag that matches it, such as `v1.11.1` for `APP_VERSION = "1.11.1"`.
 3. The **Build FilePetal downloads** workflow builds four ZIPs (Windows, Linux, macOS Apple silicon, macOS Intel), then attaches them to a GitHub Release for that tag.
 4. Check each ZIP is present on the release before linking it from the project website.
 

@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 APP_NAME = "FilePetal"
-APP_VERSION = "1.11.0"
-APP_BUILD = 16
+APP_VERSION = "1.11.1"
+APP_BUILD = 17
 
 
 def app_root() -> Path:

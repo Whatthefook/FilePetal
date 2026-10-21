@@ -51,5 +51,5 @@ The source repository is MIT licensed. Keep third-party notices and the applicab
 ## Platform notes
 
 - macOS ZIPs are currently unsigned and not notarized. Users may need to approve the first launch in Finder.
-- Linux's portable ZIP still relies on a compatible host desktop and system Qt/X11 or Wayland libraries. Ubuntu 22.04 x64 is the minimum supported baseline.
+- Linux's portable ZIP still relies on a compatible host desktop and system Qt/X11 or Wayland libraries, plus `libpulse0`. Ubuntu 22.04 x64 is the minimum supported baseline.
 - These packages do not bundle FFmpeg or RAR binaries. That keeps external codec licensing and source distribution explicit; users can install the required engine locally.

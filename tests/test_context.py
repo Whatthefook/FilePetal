@@ -9,8 +9,12 @@ gated: file work must always work.
 """
 
 import os
+import sys
 
 import pytest
+
+if sys.platform != "win32":
+    pytest.skip("Foreground window probes are Windows-only", allow_module_level=True)
 
 from tangerine import context
 

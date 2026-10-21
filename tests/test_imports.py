@@ -1,6 +1,7 @@
 """Smoke tests: every package module imports and key entry points exist."""
 
 import importlib
+import sys
 
 import pytest
 
@@ -25,6 +26,10 @@ MODULES = [
     "tangerine.settings_window",
     "tangerine.main",
 ]
+
+if sys.platform != "win32":
+    MODULES.remove("tangerine.dragfiles")
+    MODULES.remove("tangerine.monitor")
 
 
 @pytest.mark.parametrize("name", MODULES)

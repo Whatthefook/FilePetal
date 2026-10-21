@@ -12,7 +12,7 @@ FilePetal converts, edits, and organizes files locally. Operations create output
 
 - **Windows:** Windows 10 (version 1809 or later) and Windows 11, x64. Drag from File Explorer with a modifier key to open the wheel beside the pointer.
 - **macOS:** macOS 13 or later, Intel and Apple silicon. Each architecture has its own ZIP. Drop files on the FilePetal companion window to open the wheel.
-- **Linux:** x86_64 on Ubuntu 22.04 or newer (glibc 2.34 or newer). Drop files on the companion window. Tray availability depends on the desktop environment.
+- **Linux:** x86_64 on Ubuntu 22.04 or newer (glibc 2.34 or newer), with the host's Qt/X11 or Wayland libraries and PulseAudio client library (`libpulse0`). Drop files on the companion window. Tray availability depends on the desktop environment.
 - **Downloads:** ZIP packages are published on [GitHub Releases](https://github.com/Whatthefook/FilePetal/releases/latest). The macOS release has separate Apple silicon and Intel downloads.
 - **Website:** a lightweight project website and download tracking are planned for a later phase. The application itself does not include download analytics.
 

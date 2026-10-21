@@ -8,6 +8,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import sys
+
+if sys.platform != "win32":
+    pytest.skip("Explorer drag monitoring is Windows-only", allow_module_level=True)
+
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QApplication
 

@@ -1,8 +1,13 @@
 """Tests for smooth, glitch-free petal selection, hit testing, and hover stability."""
 
 import math
+import sys
 from pathlib import Path
 import pytest
+
+if sys.platform != "win32":
+    pytest.skip("Explorer drag monitoring is Windows-only", allow_module_level=True)
+
 from PySide6.QtCore import QMimeData, QPoint, QPointF, QRect, Qt, QUrl
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QCursor
 

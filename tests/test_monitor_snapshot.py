@@ -11,8 +11,13 @@ Two field problems on Windows 11:
 """
 
 import time
+import sys
 
 import pytest
+
+if sys.platform != "win32":
+    pytest.skip("Explorer selection monitoring is Windows-only", allow_module_level=True)
+
 from PySide6.QtCore import QPoint
 
 from tangerine import monitor as monitor_module

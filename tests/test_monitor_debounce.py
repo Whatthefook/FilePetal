@@ -6,7 +6,13 @@ them as a release hid the wheel mid-drag and re-bloomed it with the petals
 emptied a tick later, so dropping at that instant was a silent no-op.
 """
 
+import sys
+
 import pytest
+
+if sys.platform != "win32":
+    pytest.skip("Explorer drag monitoring is Windows-only", allow_module_level=True)
+
 from PySide6.QtCore import QPoint
 
 from tangerine import monitor as monitor_module

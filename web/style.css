@@ -194,6 +194,7 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 .wheel-center span { color: #77776e; font-size: 9px; }
 .wheel-petal { position: absolute; top: 50%; left: 50%; max-width: 100px; min-height: 34px; padding: 6px 8px; transform: translate(-50%, -50%); border: 1px solid #c9c5b8; border-radius: 3px; color: #33352e; background: rgb(255 253 248 / 92%); box-shadow: 0 2px 5px rgb(0 0 0 / 9%); cursor: pointer; font-size: 9px; font-weight: 700; line-height: 1.15; text-align: center; white-space: normal; pointer-events: auto; }
 .wheel-petal:hover, .wheel-petal:focus-visible { z-index: 1; border-color: var(--accent); color: var(--accent-dark); background: #fff4eb; }
+.wheel-petal.is-drop-target { z-index: 2; transform: translate(-50%, -50%) scale(1.08); border-color: var(--accent); color: var(--accent-dark); background: #fff0e5; box-shadow: 0 0 0 3px rgb(214 99 47 / 22%), 0 4px 12px rgb(0 0 0 / 18%); }
 .wheel-empty { position: absolute; top: calc(50% + 76px); left: 50%; width: 160px; transform: translateX(-50%); color: #6d6d63; font-size: 9px; text-align: center; }
 .demo-controls { padding: 20px 0 15px; border-bottom: 1px solid var(--line); }
 .control-heading { margin-bottom: 3px; font-family: var(--display); font-size: 15px; font-weight: 700; }

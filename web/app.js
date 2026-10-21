@@ -142,7 +142,8 @@
     const filename = document.getElementById("wheel-filename");
     const toast = document.getElementById("desktop-toast");
     const feedback = document.getElementById("demo-feedback");
-    const files = Array.from(stage.querySelectorAll(".desktop-file"));
+    const originalFiles = Array.from(stage.querySelectorAll(".desktop-file"));
+    let files = originalFiles.slice();
     let selected = null;
     let dragging = null;
     let dragOrigin = null;
@@ -152,6 +153,8 @@
     // Anchor the wheel at the first modifier event and keep it fixed for the drag.
     let wheelPositioned = false;
     let renderedWheelKey = null;
+    let dropTarget = null;
+    let outputCopies = 0;
     let lastPointer = { x: 0, y: 0 };
 
     function say(message, detail) {
@@ -174,6 +177,77 @@
     }
     function formatOutputName(name, extension) {
       return name.replace(/\.[^.]+$/, "") + "." + extension.toLowerCase();
+    }
+    function findOutputPosition() {
+      const stepX = 100;
+      const stepY = 112;
+      const fileWidth = 86;
+      const fileHeight = 100;
+      const startX = 12;
+      const startY = 16;
+      const bounds = stage.getBoundingClientRect();
+      const maxColumns = Math.max(1, Math.floor((stage.clientWidth - startX - fileWidth) / stepX) + 1);
+      for (let row = 0; row < 1000; row += 1) {
+        const top = startY + row * stepY;
+        if (top + fileHeight > stage.clientHeight) stage.style.minHeight = (top + fileHeight + 20) + "px";
+        for (let column = 0; column < maxColumns; column += 1) {
+          const left = startX + column * stepX;
+          const overlaps = files.some(function (other) {
+            const rect = other.getBoundingClientRect();
+            const otherLeft = rect.left - bounds.left;
+            const otherTop = rect.top - bounds.top;
+            return left < otherLeft + rect.width + 8 && left + fileWidth + 8 > otherLeft
+              && top < otherTop + rect.height + 8 && top + fileHeight + 8 > otherTop;
+          });
+          if (!overlaps) return { left: left, top: top };
+        }
+      }
+      return { left: startX, top: stage.clientHeight + 12 };
+    }
+    function createDemoOutput(file, extension) {
+      const sample = SAMPLE_FILES[file.dataset.file];
+      if (!sample || !sample.outputs.includes(extension)) return;
+      const outputName = formatOutputName(file.dataset.name || sample.name, extension);
+      const output = document.createElement("button");
+      const icon = file.querySelector("svg");
+      const outputPosition = findOutputPosition();
+      output.type = "button";
+      output.className = "desktop-file desktop-file-output";
+      output.draggable = false;
+      output.dataset.file = file.dataset.file;
+      output.dataset.name = outputName;
+      output.setAttribute("aria-pressed", "false");
+      output.setAttribute("aria-label", outputName + ", demo copy");
+      output.style.left = outputPosition.left + "px";
+      output.style.top = outputPosition.top + "px";
+      if (icon) {
+        const outputIcon = icon.cloneNode(true);
+        const extensionLabel = outputIcon.querySelector(".file-extension");
+        if (extensionLabel) extensionLabel.textContent = extension.toUpperCase();
+        output.appendChild(outputIcon);
+      }
+      const name = document.createElement("span");
+      name.textContent = outputName;
+      output.appendChild(name);
+      output.addEventListener("pointerdown", function (event) {
+        if (event.button !== 0) return;
+        if (selected !== output && wheelPinned) closeWheel();
+        setSelected(output);
+        startDrag(output, event);
+      });
+      output.addEventListener("click", function (event) { event.preventDefault(); });
+      output.addEventListener("dragstart", function (event) { event.preventDefault(); });
+      stage.querySelector(".desktop-files").appendChild(output);
+      files.push(output);
+      outputCopies += 1;
+      say("Created " + outputName, "Demo copy " + outputCopies + " added to the desktop. It is a visual mock only; no real file was converted or written.");
+    }
+    function setDropTarget(target) {
+      const nextTarget = target && target.closest ? target.closest(".wheel-petal[data-mode='convert']") : null;
+      if (dropTarget === nextTarget) return;
+      if (dropTarget) dropTarget.classList.remove("is-drop-target");
+      dropTarget = nextTarget;
+      if (dropTarget) dropTarget.classList.add("is-drop-target");
     }
     function placeWheel(clientX, clientY) {
       const bounds = stage.getBoundingClientRect();
@@ -204,6 +278,8 @@
     }
     function closeWheel() {
       if (!wheel) return;
+      if (dropTarget) dropTarget.classList.remove("is-drop-target");
+      dropTarget = null;
       wheel.hidden = true;
       liveMode = null;
       wheelPinned = false;
@@ -214,7 +290,8 @@
     function showWheel(mode, file, clientX, clientY, pin) {
       const sample = SAMPLE_FILES[file.dataset.file];
       if (!sample || !wheel || !petals) return;
-      const renderKey = mode + ":" + file.dataset.file;
+      const fileName = file.dataset.name || sample.name;
+      const renderKey = mode + ":" + file.dataset.file + ":" + fileName;
       const needsRender = renderedWheelKey !== renderKey || wheel.hidden;
       liveMode = mode;
       if (pin) wheelPinned = true;
@@ -232,25 +309,28 @@
         const radius = Math.max(72, diameter / 2 - 45);
         petals.replaceChildren();
         if (modeName) modeName.textContent = config.label;
-        if (filename) filename.textContent = sample.name;
+        if (filename) filename.textContent = fileName;
         choices.forEach(function (label, index) {
           const button = document.createElement("button");
           button.type = "button";
           button.className = "wheel-petal";
+          button.dataset.mode = mode;
+          if (mode === "convert") button.dataset.outputFormat = label;
           const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
           button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
           button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
           button.style.maxWidth = choices.length > 8 ? "64px" : choices.length > 4 ? "72px" : "76px";
           button.textContent = label;
-          button.setAttribute("aria-label", mode === "convert" ? "Preview conversion to " + label : "Preview " + label);
+          button.setAttribute("aria-label", mode === "convert" ? "Create demo copy as " + label : "Preview " + label);
           button.addEventListener("click", function () {
-            const message = mode === "convert"
-              ? formatOutputName(sample.name, label) + " would be saved beside the source file. This demo does not create it."
-              : mode === "tools"
+            if (mode === "convert") {
+              createDemoOutput(file, label);
+              return;
+            }
+            const message = mode === "tools"
                 ? label + " would open in FilePetal. The demo does not edit the sample."
                 : label + " would run on the selected file in the desktop app. This demo does not perform the action.";
             say(label + " selected", message);
-            closeWheel();
           });
           petals.appendChild(button);
         });
@@ -269,9 +349,9 @@
         wheelPositioned = true;
       }
       if (needsRender) {
-        if (mode === "convert") say(config.shortcut + " · " + sample.name, "Choose a format to preview the output filename. The demo does not create a file.");
-        else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
-        else say(config.shortcut + " · " + sample.name, "Choose an action to preview what the desktop app would do.");
+        if (mode === "convert") say(config.shortcut + " · " + fileName, "Choose a format to add a mock copy such as " + formatOutputName(fileName, sample.outputs[0] || "EXT") + ". The original stays on the desktop.");
+        else if (mode === "tools") say(config.shortcut + " · " + fileName, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
+        else say(config.shortcut + " · " + fileName, "Choose an action to preview what the desktop app would do.");
       }
     }
     function startDrag(file, event) {
@@ -302,6 +382,8 @@
       const mode = modeFromKeys(event);
       if (mode) showWheel(mode, dragging, event.clientX, event.clientY, false);
       else if (!wheelPinned && liveMode) closeWheel();
+      const hovered = document.elementFromPoint(event.clientX, event.clientY);
+      setDropTarget(hovered);
       const pointerOutside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
       if (pointerOutside && !wheelPinned) closeWheel();
     }
@@ -310,15 +392,28 @@
       const file = dragging;
       const didMove = file.classList.contains("has-moved");
       const modeAtDrop = liveMode;
+      const hit = Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+        ? document.elementFromPoint(event.clientX, event.clientY)
+        : null;
+      const droppedPetal = hit && hit.closest ? hit.closest(".wheel-petal[data-mode='convert']") : null;
+      if (dropTarget) dropTarget.classList.remove("is-drop-target");
+      dropTarget = null;
       file.classList.remove("is-dragging", "has-moved");
       dragging = null;
       dragOrigin = null;
       activePointerId = null;
+      if (droppedPetal && didMove) {
+        wheelPinned = true;
+        createDemoOutput(file, droppedPetal.dataset.outputFormat);
+        return;
+      }
       if (didMove) {
         setSelected(file);
         if (modeAtDrop) {
           wheelPinned = true;
-          say(MODES[modeAtDrop].label + " wheel ready", "The wheel stays open after you release the mouse. Click a petal to preview it.");
+          say(MODES[modeAtDrop].label + " wheel ready", modeAtDrop === "convert"
+            ? "Click a format to add a mock output icon, or drag the file onto a format. You can create several copies."
+            : "The wheel stays open after you release the mouse. Click a petal to preview it.");
         } else {
           say("File placed on the desktop.", "The sample moved. Drag it again while holding a shortcut to open a wheel.");
         }
@@ -332,6 +427,10 @@
       dragOrigin = null;
       activePointerId = null;
       selected = null;
+      files = originalFiles.slice();
+      stage.querySelectorAll(".desktop-file-output").forEach(function (file) { file.remove(); });
+      stage.style.removeProperty("min-height");
+      outputCopies = 0;
       files.forEach(function (file) {
         file.classList.remove("is-selected", "is-dragging", "has-moved");
         file.removeAttribute("style");

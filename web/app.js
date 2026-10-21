@@ -307,7 +307,8 @@
           center.style.width = centerSize + "px";
           center.style.height = centerSize + "px";
         }
-        const radius = Math.max(72, diameter / 2 - 45);
+        const radius = Math.max(68, diameter / 2 - (choices.length > 8 ? 34 : 45));
+        const petalSize = choices.length > 8 ? 46 : choices.length > 4 ? 52 : 58;
         petals.replaceChildren();
         if (modeName) modeName.textContent = config.label;
         if (filename) filename.textContent = fileName;
@@ -320,7 +321,10 @@
           const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
           button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
           button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
-          button.style.maxWidth = choices.length > 8 ? "64px" : choices.length > 4 ? "72px" : "76px";
+          button.style.width = petalSize + "px";
+          button.style.minHeight = petalSize + "px";
+          button.style.maxWidth = petalSize + "px";
+          button.style.fontSize = choices.length > 8 ? "8px" : "9px";
           button.textContent = label;
           button.setAttribute("aria-label", mode === "convert" ? "Create demo copy as " + label : "Preview " + label);
           button.addEventListener("click", function () {

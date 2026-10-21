@@ -134,6 +134,21 @@ def test_auto_output_reservation_uses_unique_sibling(tmp_path):
     assert len(PdfReader(output).pages) == 1
 
 
+def test_output_reservation_marker_round_trips_binary_bytes(tmp_path, monkeypatch):
+    output = tmp_path / "binary-marker.pdf"
+    marker = b"\x00\r\n\x1a" + bytes(range(4, 32))
+    monkeypatch.setattr(image_pdf.os, "urandom", lambda size: marker[:size])
+
+    reserved: set[Path] = set()
+    path, identity = image_pdf._reserve_output(output, False, reserved)
+    try:
+        assert image_pdf._owns_output_reservation(path, identity)
+        assert path.read_bytes() == marker
+    finally:
+        path.unlink(missing_ok=True)
+        reserved.clear()
+
+
 def test_concurrent_jobs_reserve_distinct_outputs(tmp_path):
     source = _write_rgb(tmp_path / "parallel.png")
     reserved: set[Path] = set()

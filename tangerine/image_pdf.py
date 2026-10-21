@@ -203,7 +203,11 @@ def _reserve_output(
                 number += 1
                 continue
             try:
-                descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+                descriptor = os.open(
+                    path,
+                    os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0),
+                    0o666,
+                )
             except FileExistsError as exc:
                 if explicit:
                     raise EngineError(i18n.tr("err.output_exists", name=path.name)) from exc
@@ -225,7 +229,7 @@ def _owns_output_reservation(path: Path, identity: tuple[int, int, bytes]) -> bo
     """Check the reserved directory entry still refers to our placeholder."""
     descriptor = None
     try:
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
         descriptor = os.open(path, flags)
         current = os.fstat(descriptor)
         marker = os.read(descriptor, len(identity[2]))

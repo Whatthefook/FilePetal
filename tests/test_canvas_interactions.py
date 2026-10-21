@@ -103,7 +103,7 @@ def test_annotate_size_slider_preserves_qwidget_width(qapp, source_image):
     try:
         dialog.width_slider.setValue(7)
         assert dialog.canvas.stroke_width == 7
-        assert callable(dialog.canvas.width) and dialog.canvas.width() == 620
+        assert callable(dialog.canvas.width) and dialog.canvas.width() == 520
     finally:
         dialog.close()
 

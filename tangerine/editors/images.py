@@ -393,7 +393,9 @@ class CropImageDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.crop.title"), parent)
         self._path = Path(path)
         self.canvas = CropCanvas(self._path)
-        self.canvas.setFixedSize(620, 420)
+        self.canvas.setMinimumSize(360, 240)
+        self.canvas.resize(520, 350)
+        self.resize(560, 470)
         self._body.addWidget(self.canvas)
 
         row = QHBoxLayout()
@@ -500,7 +502,9 @@ class RedactPhotoDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.redact.title"), parent)
         self._path = Path(path)
         self.canvas = RedactCanvas(self._path)
-        self.canvas.setFixedSize(620, 420)
+        self.canvas.setMinimumSize(360, 240)
+        self.canvas.resize(520, 350)
+        self.resize(560, 470)
         self._body.addWidget(self.canvas)
 
         row = QHBoxLayout()
@@ -871,14 +875,16 @@ class EditPhotoDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.edit.title"), parent)
         self._path = Path(path)
         self._image = tools.load_image(self._path)
-        self._image.thumbnail((520, 290))
+        self._image.thumbnail((440, 250))
         self._preview_timer = QTimer(self)
         self._preview_timer.setSingleShot(True)
         self._preview_timer.setInterval(140)
         self._preview_timer.timeout.connect(self._refresh_preview)
 
         self.preview = QLabel()
-        self.preview.setFixedSize(560, 320)
+        self.preview.setMinimumSize(360, 220)
+        self.preview.resize(470, 270)
+        self.resize(520, 560)
         self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview.setStyleSheet(
             "background: rgba(127,127,127,0.12); border-radius: 10px;")
@@ -1000,7 +1006,9 @@ class AnnotateDialog(ToolDialog):
         self._path = Path(path)
         self.canvas = AnnotateCanvas(self._path)
         self.canvas.setCursor(Qt.CursorShape.CrossCursor)
-        self.canvas.setFixedSize(620, 420)
+        self.canvas.setMinimumSize(360, 240)
+        self.canvas.resize(520, 350)
+        self.resize(560, 480)
         self._body.addWidget(self.canvas)
 
         row = QHBoxLayout()
@@ -1116,7 +1124,8 @@ class MetadataDialog(ToolDialog):
         self.table.setHorizontalHeaderLabels(
             [i18n.tr("lbl.field"), i18n.tr("lbl.value")])
         self.table.verticalHeader().setVisible(False)
-        self.table.setMinimumSize(560, 360)
+        self.table.setMinimumSize(460, 290)
+        self.resize(500, 430)
         for row, (name, value) in enumerate(rows):
             name_item = QTableWidgetItem(name)
             name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)

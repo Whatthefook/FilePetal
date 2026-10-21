@@ -31,7 +31,7 @@ def _show_error(message: str) -> None:
     if os.environ.get("QT_QPA_PLATFORM") == "offscreen":
         return
     try:
-        ctypes.windll.user32.MessageBoxW(None, message, "Tangerine", 0x10)
+        ctypes.windll.user32.MessageBoxW(None, message, "FilePetal", 0x10)
     except Exception:
         pass
 
@@ -97,6 +97,8 @@ class Controller(QObject):
         self.monitor.keyboardTriggered.connect(self._keyboard_wheel)
         self.monitor.stickyTriggered.connect(self._sticky_wheel)
         self.monitor.stickyClicked.connect(self._sticky_click)
+        self.monitor.wheelNavigated.connect(self._nav_wheel)
+        self.monitor.wheelKeyActivated.connect(self._key_activate_wheel)
         self.wheel.closed.connect(self.monitor.sticky_release)
 
         self.tray = QSystemTrayIcon(QIcon(str(paths.icon_path())), self)
@@ -143,18 +145,31 @@ class Controller(QObject):
     def _items_for(self, files, mode):
         file_list = list(files) if files else []
         sources = [Path(f) for f in file_list]
+        if mode == "actions":
+            items = []
+            for action in catalog.actions_for(sources):
+                label = i18n.tr(action.id)
+                items.append(FanItem(action.id, label, kind="action"))
+                self._labels[action.id] = label
+            return items
         if mode == "tools":
             items = []
             for tool in catalog.tools_for(sources):
                 label = i18n.tr("tool." + tool.id)
                 items.append(FanItem(tool.id, label, kind="tool"))
                 self._labels[tool.id] = label
+            if not items and sources:
+                label = i18n.tr("wheel.no_tools")
+                return [FanItem("info.no_tools", label, kind="info")]
             return items
         items = []
         for conversion in catalog.conversions_for(sources):
             label = i18n.tr("conv." + conversion.target_ext)
             items.append(FanItem(conversion.target_ext, label, kind="conversion"))
             self._labels[conversion.target_ext] = label
+        if not items and sources:
+            label = i18n.tr("wheel.no_conversion")
+            return [FanItem("info.no_conversion", label, kind="info")]
         return items
 
     def _factory(self, files):
@@ -168,14 +183,10 @@ class Controller(QObject):
             self.wheel.set_files(files)
             self.wheel.set_items(self._items_for(files, mode))
         elif self.wheel.isVisible():
-            # Re-show during the same gesture without a readable payload
-            # (Windows does not always publish the drag clipboard): keep the
-            # petals dragEnter already filled and abort the farewell in
-            # flight instead of wiping them.
             self.wheel.cancel_dismiss()
         else:
             self.wheel.set_items(self._items_for(files, mode))
-        self.wheel.center_at(pos)
+        self.wheel.place_beside_cursor(pos)
         self.wheel.show()
 
     def _keyboard_wheel(self, pos, files, mode):
@@ -187,6 +198,12 @@ class Controller(QObject):
         """Pinned wheel: shortcuts (Esc/arrows/Enter) and clicks stay live."""
         self._show_wheel(pos, files, mode)
         self.wheel.set_keyboard_mode(True)
+
+    def _nav_wheel(self, step: int):
+        self.wheel.navigate_step(step)
+
+    def _key_activate_wheel(self):
+        self.wheel.activate_current()
 
     def _sticky_click(self, pos):
         """A click outside the pinned wheel puts it away."""
@@ -203,10 +220,17 @@ class Controller(QObject):
         files = self.wheel.file_paths()
         if not files:
             return
-        self.wheel.set_items(self._items_for(files, mode), animate=True)
+        old_hover = self.wheel._hover
+        self.wheel.set_items(self._items_for(files, mode), animate=False)
+        if 0 <= old_hover < len(self.wheel._items):
+            self.wheel._set_hover_index(old_hover)
+        else:
+            from PySide6.QtGui import QCursor
+            self.wheel.update_cursor(QCursor.pos())
 
     def _move_wheel(self, pos):
-        self.wheel.update_cursor(pos)
+        if self.wheel.isVisible() and not self.wheel.is_keyboard_mode():
+            self.wheel.update_cursor(pos)
 
     def _hide_wheel(self):
         self.wheel.set_keyboard_mode(False)
@@ -216,27 +240,27 @@ class Controller(QObject):
         self.monitor.notify_dropped()
         if not files:
             return
+        from PySide6.QtGui import QCursor
+        anchor = QCursor.pos()
         label = self._labels.get(key)
-        if self._mode == "tools":
-            # Mixed selections may include files a batch tool cannot touch
-            # (e.g. photo + PDF): run it only on the matching subset.
+        if self._mode == "actions":
+            window = actions.run_action(files, key, None, label, anchor=anchor)
+        elif self._mode == "tools":
             subset = [
                 str(p)
                 for p in catalog.tool_paths(key, [Path(f) for f in files])
             ]
             if not subset:
                 return
-            window = actions.run_tool(subset, key, None, label)
+            window = actions.run_tool(subset, key, None, label, anchor=anchor)
         else:
-            # Mixed selections offer the union of targets; convert only the
-            # files whose family can actually reach the chosen one.
             subset = [
                 str(p)
                 for p in catalog.conversion_paths(key, [Path(f) for f in files])
             ]
             if not subset:
                 return
-            window = actions.run_conversions(subset, key, None, None)
+            window = actions.run_conversions(subset, key, None, None, anchor=anchor)
         self._track(window)
 
     def _track(self, window):
@@ -383,9 +407,9 @@ def _run():
     from .requests import RequestServer, forward_request, parse_request
     request = parse_request(sys.argv[1:])
     app = QApplication(sys.argv)
-    app.setApplicationName("Tangerine")
+    app.setApplicationName(paths.APP_NAME)
     app.setApplicationVersion(paths.APP_VERSION)
-    app.setOrganizationName("Tangerine")
+    app.setOrganizationName(paths.APP_NAME)
     app.setWindowIcon(QIcon(str(paths.icon_path())))
     app.setQuitOnLastWindowClosed(False)
     theme.apply_app_theme()
@@ -397,7 +421,7 @@ def _run():
         log.error("No system tray available")
         return 1
 
-    lock = QLockFile(str(paths.data_dir() / "tangerine.lock"))
+    lock = QLockFile(str(paths.data_dir() / "filepetal.lock"))
     if not lock.tryLock(0):
         if request is not None:
             # Another launch may hold the lock while its local pipe is starting.
@@ -407,7 +431,7 @@ def _run():
                 # A missing pipe fails immediately; allow the lock owner time
                 # to finish starting its server before the next attempt.
                 QThread.msleep(150)
-            log.error("The running Tangerine instance did not accept the image PDF request")
+            log.error("The running FilePetal instance did not accept the image PDF request")
             _show_error(i18n.tr("pdf.instance.old"))
             return 2
         return _already_running(app)
@@ -446,10 +470,10 @@ def main():
         return _run()
     except Exception as exc:
         text = (
-            f"Tangerine failed to start: {exc}\n\n"
+            f"FilePetal failed to start: {exc}\n\n"
             + "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
         )
-        log.error("Tangerine failed to start: %s", exc, exc_info=True)
+        log.error("FilePetal failed to start: %s", exc, exc_info=True)
         _write_crash_log(text)
         _show_error(text)
         return 1

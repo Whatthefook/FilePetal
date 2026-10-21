@@ -23,8 +23,9 @@ DEFAULT_LANGUAGE = "en"
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "en": {
         # -- app / wheel / tray -------------------------------------------
-        "app.name": "Tangerine",
+        "app.name": "FilePetal",
         "wheel.convert": "Convert",
+        "wheel.actions": "Actions",
         "wheel.tools": "Tools",
         "wheel.drop_file": "Drop a file here",
         "wheel.files_count": "{n} files",
@@ -32,19 +33,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tray.nothing_active": "Nothing active",
         "tray.settings": "Settings...",
         "tray.check_updates": "Check for Updates...",
-        "tray.quit": "Quit Tangerine",
+        "tray.quit": "Quit FilePetal",
         "tray.working": "Working",
-        "tray.tooltip": "Tangerine",
+        "tray.tooltip": "FilePetal",
         "tray.welcome": (
             "Drag files from an Explorer window while holding Shift to convert them.\n"
             "Hold Alt+Shift instead for file tools like Compress, Crop, or Trim."
         ),
-        "tray.already_running": "Tangerine is already running.",
+        "tray.already_running": "FilePetal is already running.",
         "tray.settings_unavailable": (
             "The settings window is not available in this build."
         ),
         "tray.update_message": (
-            "Tangerine {version} for Windows\n\n"
+            "FilePetal {version} for Windows\n\n"
             "This is a local build, so update checks are handled manually."
         ),
         "tray.quit_running": "Conversions are still running. Quit anyway?",
@@ -120,7 +121,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "progress.operation_failed": "The operation failed.",
         "progress.output_unconfirmed": "Finished (output not confirmed)",
         # -- settings window ----------------------------------------------
-        "settings.title": "Tangerine Settings",
+        "settings.title": "FilePetal Settings",
         "settings.tab.general": "General",
         "settings.tab.wheels": "Wheels",
         "settings.tab.formats": "Formats",
@@ -191,11 +192,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.size.1920": "Longest edge 1920 px",
         "settings.size.1280": "Longest edge 1280 px",
         "settings.about.title": (
-            "Tangerine {version} for Windows (build {build})"
+            "FilePetal {version} for Windows (build {build})"
         ),
         "settings.about.blurb": (
-            "A drag-to-convert companion for File Explorer, rebuilt from the macOS "
-            "Tangerine interaction: hold a modifier while dragging, drop on a petal."
+            "An offline-first drag-to-convert companion for File Explorer: hold "
+            "a modifier while dragging, drop on a petal."
         ),
         "settings.about.not_found": "not found",
         "settings.about.ffmpeg": "FFmpeg",
@@ -208,7 +209,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.about.restore": "Restore Defaults",
         "settings.restore.title": "Restore Defaults",
         "settings.restore.confirm": (
-            "Restore every Tangerine setting to its default value?"
+            "Restore every FilePetal setting to its default value?"
         ),
         "settings.restore.done": "Settings restored to defaults.",
         "settings.mask.none": "None",
@@ -499,7 +500,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlg.visualizer.bg_none": "Background image: none",
         "dlg.visualizer.bg_named": "Background image: {name}",
         "dlg.visualizer.hint": (
-            "The full recording is rendered as a Tangerine-orange waveform "
+            "The full recording is rendered as a warm orange waveform "
             "on black or your chosen image."
         ),
         "fmt.images_filter": "Images (*.png *.jpg *.jpeg *.webp *.bmp)",
@@ -652,11 +653,39 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "err.doc_unsupported_conversion": (
             "Unsupported document conversion: {target}"
         ),
+        "settings.wheels.actions": "Actions wheel modifier",
+        "settings.about.offline_ready": "Offline-ready (Local processing only)",
+        "settings.about.bundled_tools": "Bundled local tools",
+        "act.share": "Share",
+        "act.shelf": "Float",
+        "act.copy_ref": "Copy Files",
+        "act.move": "Move",
+        "act.copy_path": "Copy Path",
+        "act.terminal": "Terminal",
+        "action.share_fallback_copied": "System Share not available for this file type. File reference copied to clipboard.",
+        "action.move_select_folder": "Select Destination Folder",
+        "action.move_error": "Could not move files:\n{error}",
+        "action.paths_copied": "Path(s) copied to clipboard",
+        "action.refs_copied": "File reference(s) copied to clipboard",
+        "shelf.title": "FilePetal Shelf",
+        "shelf.hint": "Staged files stay here. Drag them out to any app or folder.",
+        "shelf.empty_hint": "No files on the shelf. Drop files here or use the Float action.",
+        "shelf.count_hint": "{count} file(s) staged on shelf.",
+        "shelf.pin_tooltip": "Toggle pin / stay on top",
+        "shelf.copy_files": "Copy Files",
+        "shelf.clear": "Clear",
+        "err.archive_traversal": "Malicious archive entry rejected (path traversal): {name}",
+        "wheel.no_conversion": "No offline conversion available for this format",
+        "wheel.no_tools": "No tools available for this format",
+        "wheel.actions_hint": "Press Ctrl+Shift for Actions",
+        "action.terminal_opened": "Terminal opened in {folder}",
+        "action.move_success": "Moved {n} file(s)",
     },
     "es": {
         # -- app / wheel / tray -------------------------------------------
-        "app.name": "Tangerine",
+        "app.name": "FilePetal",
         "wheel.convert": "Convertir",
+        "wheel.actions": "Acciones",
         "wheel.tools": "Herramientas",
         "wheel.drop_file": "Suelta un archivo aquí",
         "wheel.files_count": "{n} archivos",
@@ -664,19 +693,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "tray.nothing_active": "Nada activo",
         "tray.settings": "Ajustes...",
         "tray.check_updates": "Buscar actualizaciones...",
-        "tray.quit": "Salir de Tangerine",
+        "tray.quit": "Salir de FilePetal",
         "tray.working": "Trabajando",
-        "tray.tooltip": "Tangerine",
+        "tray.tooltip": "FilePetal",
         "tray.welcome": (
             "Arrastra archivos desde el Explorador manteniendo Shift para convertirlos.\n"
             "Mantén Alt+Shift para herramientas como Comprimir, Recortar o Censurar."
         ),
-        "tray.already_running": "Tangerine ya se está ejecutando.",
+        "tray.already_running": "FilePetal ya se está ejecutando.",
         "tray.settings_unavailable": (
             "La ventana de ajustes no está disponible en esta compilación."
         ),
         "tray.update_message": (
-            "Tangerine {version} para Windows\n\n"
+            "FilePetal {version} para Windows\n\n"
             "Esta es una compilación local, así que las actualizaciones se "
             "gestionan manualmente."
         ),
@@ -753,7 +782,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "progress.operation_failed": "La operación falló.",
         "progress.output_unconfirmed": "Terminado (salida no confirmada)",
         # -- settings window ----------------------------------------------
-        "settings.title": "Ajustes de Tangerine",
+        "settings.title": "Ajustes de FilePetal",
         "settings.tab.general": "General",
         "settings.tab.wheels": "Ruedas",
         "settings.tab.formats": "Formatos",
@@ -829,12 +858,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.size.1920": "Lado mayor 1920 px",
         "settings.size.1280": "Lado mayor 1280 px",
         "settings.about.title": (
-            "Tangerine {version} para Windows (compilación {build})"
+            "FilePetal {version} para Windows (compilación {build})"
         ),
         "settings.about.blurb": (
-            "Un complemento de conversión por arrastre para el Explorador, "
-            "recreado a partir de la interacción de Tangerine en macOS: mantén "
-            "un modificador al arrastrar y suelta sobre un pétalo."
+            "Un complemento de conversión por arrastre para el Explorador: "
+            "mantén un modificador al arrastrar y suelta sobre un pétalo."
         ),
         "settings.about.not_found": "no encontrado",
         "settings.about.ffmpeg": "FFmpeg",
@@ -847,7 +875,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.about.restore": "Restaurar valores",
         "settings.restore.title": "Restaurar valores",
         "settings.restore.confirm": (
-            "¿Restaurar todos los ajustes de Tangerine a sus valores "
+            "¿Restaurar todos los ajustes de FilePetal a sus valores "
             "predeterminados?"
         ),
         "settings.restore.done": (
@@ -1141,7 +1169,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "dlg.visualizer.bg_none": "Imagen de fondo: ninguna",
         "dlg.visualizer.bg_named": "Imagen de fondo: {name}",
         "dlg.visualizer.hint": (
-            "Toda la grabación se dibuja como una onda naranja Tangerine "
+            "Toda la grabación se dibuja como una onda naranja cálida "
             "sobre negro o sobre tu imagen."
         ),
         "fmt.images_filter": "Imágenes (*.png *.jpg *.jpeg *.webp *.bmp)",
@@ -1306,6 +1334,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "err.doc_unsupported_conversion": (
             "Conversión de documento no compatible: {target}"
         ),
+        "wheel.no_conversion": "No hay conversión sin conexión para este formato",
+        "wheel.no_tools": "No hay herramientas disponibles para este formato",
+        "wheel.actions_hint": "Presiona Ctrl+Shift para Acciones",
+        "action.terminal_opened": "Terminal abierto en {folder}",
+        "action.move_success": "{n} archivo(s) movido(s)",
     },
 }
 
@@ -1361,12 +1394,12 @@ TRANSLATIONS["en"].update({
     "pdf.output.hint": "Existing files are preserved. Choose a new filename.",
     "pdf.output.exists": "This file already exists. Choose a new name; your existing file will be preserved.",
     "pdf.create": "Create PDF",
-    "pdf.instance.old": "The running Tangerine version cannot receive this request. Quit it from the tray, then start the new version.",
+    "pdf.instance.old": "The running FilePetal version cannot receive this request. Quit it from the tray, then start the new version.",
     "shell.title": "File Explorer",
-    "shell.hint": "Right-click images → Send to → Tangerine – Create PDF. The classic Tangerine PDF submenu is also registered.",
+    "shell.hint": "Right-click images → Send to → FilePetal – Create PDF. The classic FilePetal PDF submenu is also registered.",
     "shell.repair": "Install / repair Explorer integration",
     "shell.source": "Explorer integration is available in the packaged Windows app.",
-    "shell.ready": "Explorer shortcuts and the Tangerine PDF menu are registered.",
+    "shell.ready": "Explorer shortcuts and the FilePetal PDF menu are registered.",
     "defaults.tab": "Tool options",
     "defaults.reuse": "Use these options next time without asking",
     "defaults.hint": "Optional. Change this in Settings → Tool options to show this dialog again.",
@@ -1382,6 +1415,28 @@ TRANSLATIONS["en"].update({
     "err.annotate_save": "Could not save the annotated image. Check that the output folder is writable.",
 })
 TRANSLATIONS["es"].update({
+    "settings.wheels.actions": "Modificador de la rueda de acciones",
+    "settings.about.offline_ready": "Listo sin conexión (Solo procesamiento local)",
+    "settings.about.bundled_tools": "Herramientas locales incluidas",
+    "act.share": "Compartir",
+    "act.shelf": "Flotar",
+    "act.copy_ref": "Copiar archivos",
+    "act.move": "Mover",
+    "act.copy_path": "Copiar ruta",
+    "act.terminal": "Terminal",
+    "action.share_fallback_copied": "Compartir del sistema no disponible para este tipo de archivo. Referencia copiada al portapapeles.",
+    "action.move_select_folder": "Seleccionar carpeta de destino",
+    "action.move_error": "No se pudieron mover los archivos:\n{error}",
+    "action.paths_copied": "Ruta(s) copiada(s) al portapapeles",
+    "action.refs_copied": "Referencia(s) copiada(s) al portapapeles",
+    "shelf.title": "Estante de FilePetal",
+    "shelf.hint": "Los archivos preparados se quedan aquí. Arrástralos a cualquier app o carpeta.",
+    "shelf.empty_hint": "No hay archivos en el estante. Suelta archivos aquí o usa la acción Flotar.",
+    "shelf.count_hint": "{count} archivo(s) preparados en el estante.",
+    "shelf.pin_tooltip": "Alternar fijar / mantener encima",
+    "shelf.copy_files": "Copiar archivos",
+    "shelf.clear": "Limpiar",
+    "err.archive_traversal": "Entrada de archivo no segura rechazada (escape de ruta): {name}",
     "err.output_exists": "El archivo de salida ya existe: {name}",
     "err.pdf_image_unsupported": "Este tipo de archivo no se admite para convertir a PDF.",
     "pdf.images.title": "Crear PDF con imágenes...",
@@ -1399,12 +1454,12 @@ TRANSLATIONS["es"].update({
     "pdf.output.hint": "Se conservan los archivos existentes. Elige un nombre nuevo.",
     "pdf.output.exists": "Este archivo ya existe. Elige otro nombre; se conservará el archivo existente.",
     "pdf.create": "Crear PDF",
-    "pdf.instance.old": "La versión abierta de Tangerine no puede recibir esta solicitud. Ciérrala desde la bandeja y abre la versión nueva.",
+    "pdf.instance.old": "La versión abierta de FilePetal no puede recibir esta solicitud. Ciérrala desde la bandeja y abre la versión nueva.",
     "shell.title": "Explorador de archivos",
-    "shell.hint": "Clic derecho en imágenes → Enviar a → Tangerine – Crear PDF. También se registra el submenú clásico Tangerine PDF.",
+    "shell.hint": "Clic derecho en imágenes → Enviar a → FilePetal – Crear PDF. También se registra el submenú clásico FilePetal PDF.",
     "shell.repair": "Instalar / reparar integración con Explorer",
     "shell.source": "La integración con Explorer está disponible en la aplicación empaquetada de Windows.",
-    "shell.ready": "Se registraron los accesos de Explorer y el menú PDF de Tangerine.",
+    "shell.ready": "Se registraron los accesos de Explorer y el menú PDF de FilePetal.",
     "defaults.tab": "Opciones de herramientas",
     "defaults.reuse": "Usar estos ajustes la próxima vez sin preguntar",
     "defaults.hint": "Opcional. Desactívalo en Ajustes → Opciones de herramientas para volver a ver esta ventana.",

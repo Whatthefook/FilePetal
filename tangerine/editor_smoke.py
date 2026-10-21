@@ -169,7 +169,7 @@ def editors_smoke() -> int:
                     annotate.width_slider.setValue(7)
                     assert annotate.canvas.stroke_width == 7
                     assert callable(annotate.canvas.width)
-                    assert annotate.canvas.width() == 620
+                    assert annotate.canvas.width() == 520
                     return {"step_value": spin.value(), "blocked_signal_refresh": True, "stroke_width": 7,
                             "canvas_width": annotate.canvas.width()}
                 finally:

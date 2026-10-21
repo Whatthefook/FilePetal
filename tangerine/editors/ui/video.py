@@ -21,7 +21,7 @@ from .waveform import PlayerMixin
 
 
 class VideoPane(QWidget, PlayerMixin):
-    def __init__(self, path: Path, parent: QWidget | None = None, height: int = 300):
+    def __init__(self, path: Path, parent: QWidget | None = None, height: int = 240):
         QWidget.__init__(self, parent)
         self._path = Path(path)
         layout = QVBoxLayout(self)
@@ -88,7 +88,9 @@ class BoxDrawDialog(ToolDialog):
     def __init__(self, frame: Path, parent: QWidget | None = None):
         super().__init__(i18n.tr("dlg.boxdraw.title"), parent)
         self.canvas = RedactCanvas(frame)
-        self.canvas.setFixedSize(560, 380)
+        self.canvas.setMinimumSize(360, 220)
+        self.canvas.resize(500, 320)
+        self.resize(540, 440)
         self.box = None
         self._body.addWidget(self.canvas)
         hint = QLabel(i18n.tr("dlg.boxdraw.hint"))

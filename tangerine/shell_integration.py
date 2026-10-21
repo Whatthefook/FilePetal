@@ -14,13 +14,13 @@ from . import paths
 
 log = logging.getLogger("tangerine")
 CLSID = "{7E2C14A9-8D31-4B76-A5F0-3C9D8216E4B2}"
-OWNER = "Tangerine.ImagePdf"
-HANDLER_KEY = r"Software\Classes\*\shellex\ContextMenuHandlers\Tangerine"
+OWNER = "FilePetal.ImagePdf"
+HANDLER_KEY = r"Software\Classes\*\shellex\ContextMenuHandlers\FilePetal"
 CLASS_KEY = rf"Software\Classes\CLSID\{CLSID}"
-CONFIG_KEY = r"Software\Tangerine\ShellIntegration"
+CONFIG_KEY = r"Software\FilePetal\ShellIntegration"
 SHORTCUTS = {
-    "Tangerine - Crear PDF.lnk": "--images-to-pdf",
-    "Tangerine - PDF por nombre.lnk": "--images-to-pdf --pdf-order name --pdf-quick",
+    "FilePetal - Crear PDF.lnk": "--images-to-pdf",
+    "FilePetal - PDF por nombre.lnk": "--images-to-pdf --pdf-order name --pdf-quick",
 }
 
 
@@ -87,12 +87,12 @@ def _notify():
 def register_shell(executable=None):
     if executable is None:
         if not getattr(sys, "frozen", False):
-            raise RuntimeError("Explorer integration requires a packaged Tangerine.exe.")
+            raise RuntimeError("Explorer integration requires a packaged FilePetal.exe.")
         executable = sys.executable
     executable = Path(executable).resolve()
     dll = executable.parent / "_internal/shell/TangerineShell.dll"
     if not executable.is_file() or not dll.is_file():
-        raise FileNotFoundError("Tangerine.exe and its bundled shell/TangerineShell.dll are required.")
+        raise FileNotFoundError("FilePetal.exe and its bundled shell/TangerineShell.dll are required.")
     # Validate every owned destination before changing the registration.
     for path in (HANDLER_KEY, CLASS_KEY, CONFIG_KEY):
         existing = _read(path, "TangerineOwner")
@@ -109,7 +109,7 @@ def register_shell(executable=None):
     for filename, args in SHORTCUTS.items():
         link_path = sendto / filename
         shortcut = shell.CreateShortcut(str(link_path))
-        if link_path.exists() and shortcut.TargetPath and Path(shortcut.TargetPath).name.casefold() != "tangerine.exe":
+        if link_path.exists() and shortcut.TargetPath and Path(shortcut.TargetPath).name.casefold() not in ("filepetal.exe", "tangerine.exe"):
             raise RuntimeError("Send to shortcut belongs to another application: " + str(link_path))
         shortcut.TargetPath = str(executable)
         shortcut.Arguments = args
@@ -123,7 +123,7 @@ def register_shell(executable=None):
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, HANDLER_KEY) as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, CLSID)
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CLASS_KEY) as key:
-        winreg.SetValueEx(key, "", 0, winreg.REG_SZ, "Tangerine Image PDF menu")
+        winreg.SetValueEx(key, "", 0, winreg.REG_SZ, "FilePetal Image PDF menu")
     with winreg.CreateKey(winreg.HKEY_CURRENT_USER, CLASS_KEY + r"\InprocServer32") as key:
         winreg.SetValueEx(key, "", 0, winreg.REG_SZ, str(dll))
         winreg.SetValueEx(key, "ThreadingModel", 0, winreg.REG_SZ, "Apartment")
@@ -144,6 +144,6 @@ def unregister_shell():
     shell = CreateObject("WScript.Shell", dynamic=True)
     for filename in SHORTCUTS:
         link = _sendto_dir() / filename
-        if link.exists() and Path(shell.CreateShortcut(str(link)).TargetPath).name.casefold() == "tangerine.exe":
+        if link.exists() and Path(shell.CreateShortcut(str(link)).TargetPath).name.casefold() in ("filepetal.exe", "tangerine.exe"):
             link.unlink()
     _notify()

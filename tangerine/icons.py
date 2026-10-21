@@ -489,6 +489,77 @@ def _g_globe(p: QPainter) -> None:
     p.drawEllipse(QRectF(0.34, 0.12, 0.32, 0.76))
 
 
+
+def _g_share(p: QPainter) -> None:
+    path = QPainterPath()
+    path.moveTo(0.30, 0.50)
+    path.lineTo(0.70, 0.28)
+    path.moveTo(0.30, 0.50)
+    path.lineTo(0.70, 0.72)
+    p.drawPath(path)
+    r = 0.08
+    for x, y in ((0.30, 0.50), (0.70, 0.28), (0.70, 0.72)):
+        node = QPainterPath()
+        node.addEllipse(QPointF(x, y), r, r)
+        p.drawPath(node)
+
+
+def _g_shelf(p: QPainter) -> None:
+    path = QPainterPath()
+    path.moveTo(0.18, 0.78)
+    path.lineTo(0.82, 0.78)
+    path.moveTo(0.24, 0.78)
+    path.lineTo(0.24, 0.86)
+    path.moveTo(0.76, 0.78)
+    path.lineTo(0.76, 0.86)
+    path.addRoundedRect(QRectF(0.28, 0.18, 0.44, 0.50), 0.06, 0.06)
+    p.drawPath(path)
+
+
+def _g_copy_ref(p: QPainter) -> None:
+    path = QPainterPath()
+    path.addRoundedRect(QRectF(0.30, 0.30, 0.48, 0.54), 0.06, 0.06)
+    path.moveTo(0.22, 0.68)
+    path.lineTo(0.22, 0.22)
+    path.lineTo(0.68, 0.22)
+    p.drawPath(path)
+
+
+def _g_move(p: QPainter) -> None:
+    path = QPainterPath()
+    path.moveTo(0.16, 0.32)
+    path.lineTo(0.38, 0.32)
+    path.lineTo(0.48, 0.44)
+    path.lineTo(0.84, 0.44)
+    path.lineTo(0.84, 0.82)
+    path.lineTo(0.16, 0.82)
+    path.closeSubpath()
+    path.moveTo(0.36, 0.64)
+    path.lineTo(0.64, 0.64)
+    path.lineTo(0.54, 0.54)
+    path.moveTo(0.64, 0.64)
+    path.lineTo(0.54, 0.74)
+    p.drawPath(path)
+
+
+def _g_copy_path(p: QPainter) -> None:
+    path = QPainterPath()
+    path.addRoundedRect(QRectF(0.20, 0.40, 0.36, 0.20), 0.10, 0.10)
+    path.addRoundedRect(QRectF(0.44, 0.40, 0.36, 0.20), 0.10, 0.10)
+    p.drawPath(path)
+
+
+def _g_terminal(p: QPainter) -> None:
+    path = QPainterPath()
+    path.addRoundedRect(QRectF(0.14, 0.20, 0.72, 0.60), 0.08, 0.08)
+    path.moveTo(0.28, 0.40)
+    path.lineTo(0.42, 0.50)
+    path.lineTo(0.28, 0.60)
+    path.moveTo(0.48, 0.60)
+    path.lineTo(0.66, 0.60)
+    p.drawPath(path)
+
+
 _GLYPHS = {
     "compress": _g_compress,
     "crop": _g_crop,
@@ -525,6 +596,13 @@ _GLYPHS = {
     "slides": _g_slides,
     "book": _g_book,
     "globe": _g_globe,
+    "share": _g_share,
+    "shelf": _g_shelf,
+    "copy_ref": _g_copy_ref,
+    "move": _g_move,
+    "copy_path": _g_copy_path,
+    "terminal": _g_terminal,
+
 }
 
 GLYPH_KEYS = tuple(sorted(_GLYPHS))
@@ -570,6 +648,13 @@ _TOOL_GLYPHS = {
     "doc.ocr": "text",
     "img.ocr": "text",
     "txt.ocr": "text",
+    "act.share": "share",
+    "act.shelf": "shelf",
+    "act.copy_ref": "copy_ref",
+    "act.move": "move",
+    "act.copy_path": "copy_path",
+    "act.terminal": "terminal",
+
 }
 
 #: File extension -> glyph name (image families share one glyph).

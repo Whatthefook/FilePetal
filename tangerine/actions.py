@@ -25,7 +25,7 @@ _COMPRESS_KEYS = {
 }
 
 
-def run_conversions(file_paths, target, parent=None, label=None):
+def run_conversions(file_paths, target, parent=None, label=None, anchor=None):
     paths = [Path(p) for p in file_paths]
     if not paths:
         return None
@@ -57,6 +57,8 @@ def run_conversions(file_paths, target, parent=None, label=None):
             outputs.extend(engines.convert_single(path, target, fctx, reserved))
         return outputs
 
+    if anchor is not None:
+        return run_job(title, work, parent, anchor=anchor)
     return run_job(title, work, parent)
 
 
@@ -88,7 +90,7 @@ _DIRECT = {
 }
 
 
-def run_tool(file_paths, key, parent=None, label=None):
+def run_tool(file_paths, key, parent=None, label=None, anchor=None):
     paths = [Path(p) for p in file_paths]
     if not paths:
         return None
@@ -104,6 +106,8 @@ def run_tool(file_paths, key, parent=None, label=None):
     if entry is not None:
         title_key, fn = entry
         reserved: set[str] = set()
+        if anchor is not None:
+            return run_job(label or i18n.tr(title_key), lambda ctx: fn(paths, ctx, reserved), parent, anchor=anchor)
         return run_job(label or i18n.tr(title_key), lambda ctx: fn(paths, ctx, reserved), parent)
 
     family = _COMPRESS_KEYS.get(key)
@@ -209,3 +213,152 @@ def _run_qr(paths, parent):
     job.finished.connect(lambda _results: ResultsWindow(holder.get("results", []), None).exec())
     job.start()
     return window
+
+
+def run_share(file_paths, parent=None):
+    import os
+    paths = [Path(p) for p in file_paths if Path(p).exists()]
+    if not paths:
+        return None
+    success = False
+    try:
+        import comtypes.client
+        shell = comtypes.client.CreateObject("Shell.Application")
+        for p in paths:
+            abs_p = str(p.resolve())
+            folder = shell.NameSpace(os.path.dirname(abs_p))
+            if folder:
+                item = folder.ParseName(os.path.basename(abs_p))
+                if item:
+                    for v in item.Verbs():
+                        clean = v.Name.replace("&", "").strip().lower()
+                        if clean == "share":
+                            v.DoIt()
+                            success = True
+                            break
+            if success:
+                break
+    except Exception as exc:
+        log.warning("Windows Share verb invocation failed: %s", exc)
+
+    if not success:
+        run_copy_refs(file_paths, parent)
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.information(
+            parent,
+            i18n.tr("app.name"),
+            i18n.tr("action.share_fallback_copied"),
+        )
+    return None
+
+
+def run_shelf(file_paths, parent=None):
+    from . import shelf
+    return shelf.open_shelf(file_paths, parent)
+
+
+def run_copy_refs(file_paths, parent=None):
+    from PySide6.QtCore import QMimeData, QUrl
+    from PySide6.QtWidgets import QApplication
+    paths = [Path(p).resolve() for p in file_paths if Path(p).exists()]
+    if not paths:
+        return None
+    mime = QMimeData()
+    mime.setUrls([QUrl.fromLocalFile(str(p)) for p in paths])
+    mime.setText("\n".join(str(p) for p in paths))
+    cb = QApplication.clipboard()
+    if cb is not None:
+        cb.setMimeData(mime)
+    return None
+
+
+def run_move(file_paths, parent=None):
+    import shutil
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+    from . import naming
+    paths = [Path(p) for p in file_paths if Path(p).exists()]
+    if not paths:
+        return None
+    start_dir = str(paths[0].parent)
+    dest_dir = QFileDialog.getExistingDirectory(parent, i18n.tr("action.move_select_folder"), start_dir)
+    if not dest_dir:
+        return None
+    dest_path = Path(dest_dir).resolve()
+    reserved: set[Path] = set()
+    errors = []
+    for src in paths:
+        src_resolved = src.resolve()
+        if src_resolved.parent == dest_path:
+            continue
+        try:
+            target = naming.unique_path(dest_path, src.stem, src.suffix, reserved)
+            shutil.move(str(src_resolved), str(target))
+        except Exception as exc:
+            errors.append(f"{src.name}: {exc}")
+    if errors:
+        QMessageBox.warning(
+            parent,
+            i18n.tr("app.name"),
+            i18n.tr("action.move_error", error="\n".join(errors)),
+        )
+    return len(paths) - len(errors)
+
+
+def run_copy_paths(file_paths, parent=None):
+    from PySide6.QtWidgets import QApplication
+    paths = [str(Path(p).resolve()) for p in file_paths]
+    if not paths:
+        return None
+    text = "\n".join(paths)
+    cb = QApplication.clipboard()
+    if cb is not None:
+        cb.setText(text)
+    return None
+
+
+def run_terminal(file_paths, parent=None):
+    import shutil
+    import subprocess
+    paths = [Path(p).resolve() for p in file_paths]
+    if not paths:
+        return None
+    target_dir = paths[0].parent if paths[0].is_file() else paths[0]
+    folder_str = str(target_dir)
+    wt = shutil.which("wt") or shutil.which("wt.exe")
+    if wt:
+        subprocess.Popen([wt, "-d", folder_str])
+    else:
+        powershell = shutil.which("powershell.exe") or "powershell.exe"
+        subprocess.Popen([powershell, "-NoExit", "-Command", f"Set-Location -LiteralPath '{folder_str}'"])
+    return None
+
+
+def run_action(file_paths, key, parent=None, label=None, anchor=None):
+    if key == "act.share":
+        return run_share(file_paths, parent)
+    if key == "act.shelf":
+        return run_shelf(file_paths, parent)
+    if key == "act.copy_ref":
+        run_copy_refs(file_paths, parent)
+        from .toast import show_toast
+        show_toast(i18n.tr("action.refs_copied"), anchor=anchor)
+        return None
+    if key == "act.move":
+        moved = run_move(file_paths, parent)
+        if moved:
+            from .toast import show_toast
+            show_toast(i18n.tr("action.move_success", n=moved), anchor=anchor)
+        return None
+    if key == "act.copy_path":
+        run_copy_paths(file_paths, parent)
+        from .toast import show_toast
+        show_toast(i18n.tr("action.paths_copied"), anchor=anchor)
+        return None
+    if key == "act.terminal":
+        run_terminal(file_paths, parent)
+        from .toast import show_toast
+        paths = [Path(p).resolve() for p in file_paths]
+        folder_name = paths[0].parent.name if paths[0].is_file() else paths[0].name
+        show_toast(i18n.tr("action.terminal_opened", folder=folder_name), anchor=anchor)
+        return None
+    return None

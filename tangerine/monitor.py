@@ -21,6 +21,11 @@ user32 = ctypes.windll.user32
 
 VK_LBUTTON = 0x01
 VK_RETURN = 0x0D
+VK_ESCAPE = 0x1B
+VK_LEFT = 0x25
+VK_UP = 0x26
+VK_RIGHT = 0x27
+VK_DOWN = 0x28
 VK_SHIFT = 0x10
 VK_CONTROL = 0x11
 VK_MENU = 0x12
@@ -78,6 +83,8 @@ class DragMonitor(QObject):
     keyboardTriggered = Signal(object, object, str)
     stickyTriggered = Signal(object, object, str)
     stickyClicked = Signal(object)
+    wheelNavigated = Signal(int)
+    wheelKeyActivated = Signal()
 
     _selectionReady = Signal(object, object, str)
 
@@ -104,6 +111,10 @@ class DragMonitor(QObject):
         self._snapshot_pending = False
         self._last_snapshot_poll = 0.0
         self._mods_prev: set[str] = set()
+        self._esc_down = False
+        self._left_down = False
+        self._right_down = False
+        self._enter_key_down = False
         self._sticky = False
         self._sticky_since = 0.0
         self._toggle_down = False
@@ -132,9 +143,8 @@ class DragMonitor(QObject):
     # -- polling -------------------------------------------------------
 
     def _cursor(self) -> QPoint:
-        point = wintypes.POINT()
-        user32.GetCursorPos(ctypes.byref(point))
-        return QPoint(point.x, point.y)
+        from PySide6.QtGui import QCursor
+        return QCursor.pos()
 
     def _set_active(self, active: bool) -> None:
         interval = ACTIVE_INTERVAL_MS if active else IDLE_INTERVAL_MS
@@ -152,14 +162,15 @@ class DragMonitor(QObject):
         held = self._held_modifiers()
         if not held:
             return None
-        tools_mask = settings.parse_mask(settings.get("toolsWheelDragModifierMask"))
-        conversion_mask = settings.parse_mask(
-            settings.get("conversionWheelDragModifierMask")
-        )
-        if tools_mask and tools_mask <= held:
-            return "tools"
-        if conversion_mask and conversion_mask <= held:
-            return "conversion"
+        masks = [
+            ("actions", settings.parse_mask(settings.get("actionsWheelDragModifierMask", "ctrl+shift"))),
+            ("tools", settings.parse_mask(settings.get("toolsWheelDragModifierMask", "alt+shift"))),
+            ("conversion", settings.parse_mask(settings.get("conversionWheelDragModifierMask", "shift"))),
+        ]
+        masks.sort(key=lambda item: len(item[1]) if item[1] else 0, reverse=True)
+        for mode_name, mask in masks:
+            if mask and mask <= held:
+                return mode_name
         return None
 
     def _drag_files(self) -> list[str] | None:
@@ -306,6 +317,10 @@ class DragMonitor(QObject):
                 self._maybe_snapshot(False, forced=True)
             self._mods_prev = held
             self._maybe_snapshot(False)
+            self._esc_down = False
+            self._left_down = False
+            self._right_down = False
+            self._enter_key_down = False
             if self._visible:
                 self._visible = False
                 self.wheelHidden.emit()
@@ -317,6 +332,33 @@ class DragMonitor(QObject):
             return
 
         if self._visible:
+            # Handle keyboard navigation while the wheel is showing during drag
+            esc = _is_down(VK_ESCAPE)
+            if esc and not self._esc_down:
+                self._visible = False
+                self._mode = None
+                self.wheelHidden.emit()
+                self.notify_dropped()
+                return
+            self._esc_down = esc
+
+            left = _is_down(VK_LEFT) or _is_down(VK_UP)
+            if left and not self._left_down:
+                self.wheelNavigated.emit(-1)
+            self._left_down = left
+
+            right = _is_down(VK_RIGHT) or _is_down(VK_DOWN)
+            if right and not self._right_down:
+                self.wheelNavigated.emit(1)
+            self._right_down = right
+
+            ret = _is_down(VK_RETURN)
+            if ret and not self._enter_key_down:
+                self.wheelKeyActivated.emit()
+                self.notify_dropped()
+                return
+            self._enter_key_down = ret
+
             if not context.wheel_allowed():
                 self._visible = False
                 self._mode = None
@@ -326,11 +368,9 @@ class DragMonitor(QObject):
             mode = self._mode_for_current_modifiers()
             if mode is None and self._touch_mode:
                 mode = "conversion"
-            if mode is None:
-                self._visible = False
-                self._mode = None
-                self.wheelHidden.emit()
-            elif mode != self._mode:
+            # Releasing modifier keys while dragging keeps the current wheel open
+            # until mouse release or Escape. Switching modifiers switches modes cleanly.
+            if mode is not None and mode != self._mode:
                 self._mode = mode
                 self.wheelRefreshed.emit(mode)
             return
@@ -419,6 +459,10 @@ class DragMonitor(QObject):
             self._toggle_pending = False
             self._sticky = False
             self._set_active(False)
+            self._esc_down = False
+            self._left_down = False
+            self._right_down = False
+            self._enter_key_down = False
             if self._visible:
                 self._visible = False
                 self.wheelHidden.emit()

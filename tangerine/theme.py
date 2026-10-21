@@ -77,20 +77,20 @@ DARK = {
 # HUD material tokens (v1.7.0).  Colors are ``(r, g, b, a)`` tuples except
 # ``peach`` and ``icon``, which are opaque ``#rrggbb`` strings.
 HUD_LIGHT = {
-    "wash": (255, 244, 236, 200),
-    "halo": (125, 110, 100, 110),
-    "hub": (255, 252, 249, 232),
+    "wash": (255, 248, 242, 135),
+    "halo": (125, 110, 100, 95),
+    "hub": (255, 252, 249, 215),
     "peach": "#FFD9C2",
-    "track": (0, 0, 0, 60),
+    "track": (0, 0, 0, 50),
     "icon": "#3A2416",
 }
 
 HUD_DARK = {
-    "wash": (30, 25, 22, 195),
-    "halo": (20, 16, 14, 150),
-    "hub": (40, 33, 29, 235),
+    "wash": (24, 21, 19, 130),
+    "halo": (20, 16, 14, 120),
+    "hub": (36, 30, 26, 215),
     "peach": "#3A2A20",
-    "track": (255, 255, 255, 45),
+    "track": (255, 255, 255, 40),
     "icon": "#F3E7DE",
 }
 

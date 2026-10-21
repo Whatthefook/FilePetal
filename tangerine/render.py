@@ -335,9 +335,9 @@ def postprocess_pdf(path: Path, *, title: str = "", page_numbers: bool = True) -
                     added.merge_page(overlay)
         writer.add_metadata({
             "/Title": title or path.stem,
-            "/Author": "Tangerine",
-            "/Creator": "Tangerine",
-            "/Producer": f"Tangerine {paths.APP_VERSION}",
+            "/Author": "FilePetal",
+            "/Creator": "FilePetal",
+            "/Producer": f"FilePetal {paths.APP_VERSION}",
         })
         with open(tmp, "wb") as handle:
             writer.write(handle)

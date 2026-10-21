@@ -10,6 +10,12 @@ $outputDirectory = Join-Path $repoRoot 'build\shell'
 $null = New-Item -ItemType Directory -Force -Path $outputDirectory
 
 $cmake = Get-Command cmake.exe -ErrorAction SilentlyContinue
+if (-not $cmake) {
+    $cmakeCandidate = 'C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+    if (Test-Path -LiteralPath $cmakeCandidate) {
+        $cmake = [pscustomobject]@{ Source = $cmakeCandidate }
+    }
+}
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 $visualStudio = $null
 if ($cmake -and (Test-Path -LiteralPath $vswhere -PathType Leaf)) {

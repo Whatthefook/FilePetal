@@ -25,7 +25,7 @@ def _mime(path) -> QMimeData:
 def _petal_point(wheel, index: int, count: int) -> QPointF:
     step = 360.0 / count
     radians = math.radians(-90.0 + (index + 0.5) * step)
-    radius = 167.0  # midway between R_IN (124) and R_OUT (210)
+    radius = (getattr(wheel, 'R_IN', 84.0) + getattr(wheel, 'R_OUT', 142.0)) / 2.0
     center_x, center_y = wheel.width() / 2.0, wheel.height() / 2.0
     return QPointF(
         center_x + radius * math.cos(radians),

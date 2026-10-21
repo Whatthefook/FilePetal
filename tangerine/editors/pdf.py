@@ -24,8 +24,8 @@ class ImagesPdfDialog(ToolDialog):
         self._paths = list(dict.fromkeys(Path(p) for p in files if is_pdf_image(Path(p)) and Path(p).is_file()))
         if not self._paths:
             raise engines.EngineError(i18n.tr("err.no_images"))
-        self.resize(600, 610)
-        self.setMinimumSize(520, 520)
+        self.resize(510, 520)
+        self.setMinimumSize(440, 440)
         self.job_window = None
         self.intro = QLabel(i18n.tr("pdf.images.intro", count=len(self._paths)))
         self.intro.setWordWrap(True)

@@ -28,7 +28,7 @@ class ImageCanvas(QWidget):
     """Displays an image scaled to fit, with image-pixel coordinate mapping."""
 
     def __init__(self, path: Path, parent: QWidget | None = None,
-                 max_size: tuple[int, int] = (620, 460)):
+                 max_size: tuple[int, int] = (520, 350)):
         super().__init__(parent)
         self._max_size = max_size
         self.image = None
@@ -38,6 +38,7 @@ class ImageCanvas(QWidget):
         self.scale = 1.0
         self.offset = QPointF(0.0, 0.0)
         self.setMinimumSize(360, 240)
+        self.resize(*max_size)
         self.setMouseTracking(True)
         self.load(path)
 

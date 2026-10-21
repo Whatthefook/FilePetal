@@ -18,7 +18,7 @@ def _request_smoke(app, root, files):
     from .main import Controller
 
     appdata = root / "appdata"
-    queue = appdata / "Tangerine" / "request-queue"
+    queue = appdata / paths.APP_NAME / "request-queue"
     queue.mkdir(parents=True)
     original_data_dir = paths.data_dir
     paths.data_dir = lambda: queue.parent
@@ -68,7 +68,7 @@ def _request_smoke(app, root, files):
                 if child.poll() != 0:
                     log_handle.flush()
                     detail = child_log.read_text(encoding="utf-8", errors="replace")[-4000:]
-                    for filename in ("crash.log", "tangerine.log"):
+                    for filename in ("crash.log", "tangerine.log", "filepetal.log"):
                         diagnostic = queue.parent / filename
                         if diagnostic.exists():
                             detail += diagnostic.read_text(encoding="utf-8", errors="replace")[-4000:]

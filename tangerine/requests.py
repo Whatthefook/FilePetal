@@ -18,11 +18,11 @@ MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
 def server_name() -> str:
     key = os.path.normcase(str(paths.data_dir().resolve())).encode("utf-8")
-    return "Tangerine-" + hashlib.sha256(key).hexdigest()[:24]
+    return f"{paths.APP_NAME}-" + hashlib.sha256(key).hexdigest()[:24]
 
 
 def parse_request(arguments: list[str]) -> dict | None:
-    parser = argparse.ArgumentParser(prog="Tangerine")
+    parser = argparse.ArgumentParser(prog=paths.APP_NAME)
     parser.add_argument("--images-to-pdf", action="store_true")
     parser.add_argument("--pdf-order", choices=("name", "received", "manual"), default="name")
     parser.add_argument("--pdf-quick", action="store_true")
@@ -38,7 +38,7 @@ def parse_request(arguments: list[str]) -> dict | None:
         manifest = args.selection_manifest.resolve()
         queue = (paths.data_dir() / "request-queue").resolve()
         if manifest.parent != queue or not manifest.name.startswith("selection-") or manifest.suffix != ".json":
-            raise ValueError("Selection manifest must belong to Tangerine's request queue.")
+            raise ValueError("Selection manifest must belong to FilePetal's request queue.")
         if manifest.stat().st_size > MAX_REQUEST_BYTES:
             raise ValueError("Selection manifest is too large.")
         loaded = json.loads(manifest.read_text(encoding="utf-8-sig"))

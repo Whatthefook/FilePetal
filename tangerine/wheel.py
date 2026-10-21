@@ -59,14 +59,14 @@ from .icons import icon_for, paint_icon  # noqa: F401 (icon_for is a re-export)
 
 log = logging.getLogger("tangerine")
 
-# -- geometry (460x460 window; plan 1.2) ------------------------------------
-EXTENT = 230.0
-R_OUT = 210.0
-R_IN = 124.0
+# -- geometry (compact ~300x320 window at standard DPI) ---------------------
+EXTENT = 155.0
+R_OUT = 142.0
+R_IN = 84.0
 BAND = R_OUT - R_IN
-HALO_R = R_OUT + 16.0
-HUB_R = R_IN - 6.0
-GAP_DEG = 6.5
+HALO_R = 153.0
+HUB_R = 80.0
+GAP_DEG = 6.0
 CORNER_R = 0.24 * BAND
 
 # -- motion ----------------------------------------------------------------
@@ -76,18 +76,18 @@ APPEAR_SCALE = 0.6           # petals start at 0.6R
 DEPART_MS = 160.0
 DEPART_SCALE = 0.94
 HOVER_MS = 120.0
-HOVER_LIFT = 4.0
+HOVER_LIFT = 3.0
 CAPSULE_MS = 140.0
 CAPSULE_FADE_MS = 100.0
-CAPSULE_H = 30.0
-CAPSULE_MIN_W = 96.0
-CAPSULE_SLIDE = 40.0
+CAPSULE_H = 22.0
+CAPSULE_MIN_W = 68.0
+CAPSULE_SLIDE = 26.0
 HUB_VEIL = 0.45             # hub token alpha share: the disc stays frosted
 
-ICON_SIZE = 27.0
-ICON_LABEL_GAP = 3.0
-TOOL_LABEL_SIZE = 11
-CONVERT_LABEL_SIZE = 22      # ≈ 0.105 · R_OUT
+ICON_SIZE = 20.0
+ICON_LABEL_GAP = 2.0
+TOOL_LABEL_SIZE = 9
+CONVERT_LABEL_SIZE = 15
 
 HOVER_INK = "#2B1608"
 
@@ -182,6 +182,10 @@ class TangerineWheel(QWidget):
     activated = Signal(list, str)
     closed = Signal()
 
+    EXTENT = EXTENT
+    R_OUT = R_OUT
+    R_IN = R_IN
+
     def __init__(self, parent=None):
         super().__init__(None)
         self.setWindowFlags(
@@ -265,23 +269,53 @@ class TangerineWheel(QWidget):
         """
         self._prompt = (str(main), str(sub))
 
-    def center_at(self, global_pos: QPoint) -> None:
-        center = QPoint(global_pos)
-        screen = QGuiApplication.screenAt(center) or QGuiApplication.primaryScreen()
+    def place_beside_cursor(self, cursor_pos: QPoint) -> None:
+        """Position the compact dial next to the cursor on the roomier side, clamped to the active monitor."""
+        screen = QGuiApplication.screenAt(cursor_pos) or QGuiApplication.primaryScreen()
+        w = self.width()
+        h = self.height()
+        gap = 20
         if screen is not None:
             area = screen.availableGeometry()
-            margin = int(HALO_R)
-            left, right = area.left() + margin, area.right() - margin
-            if left <= right:
-                center.setX(min(max(center.x(), left), right))
-            top, bottom = area.top() + margin, area.bottom() - margin
-            if top <= bottom:
-                center.setY(min(max(center.y(), top), bottom))
-        self.move(center.x() - int(EXTENT), center.y() - int(EXTENT))
+            space_right = area.right() - cursor_pos.x()
+            space_left = cursor_pos.x() - area.left()
+            if space_right >= w + gap:
+                x = cursor_pos.x() + gap
+            elif space_left >= w + gap:
+                x = cursor_pos.x() - w - gap
+            elif space_right >= space_left:
+                x = cursor_pos.x() + gap
+            else:
+                x = cursor_pos.x() - w - gap
+            y = cursor_pos.y() - h // 2
+            x = max(area.left(), min(x, area.right() - w + 1))
+            y = max(area.top(), min(y, area.bottom() - h + 1))
+        else:
+            x = cursor_pos.x() + gap
+            y = cursor_pos.y() - h // 2
+        self.move(int(x), int(y))
         self._capture_backdrop()
 
+    def center_at(self, global_pos: QPoint) -> None:
+        self.place_beside_cursor(global_pos)
+
     def update_cursor(self, global_pos: QPoint) -> None:
-        self._set_hover_index(self.hit_test(QPointF(self.mapFromGlobal(global_pos))))
+        if self._keyboard_mode:
+            return
+        local = self.mapFromGlobal(global_pos)
+        if not self.rect().contains(local):
+            return
+        dx = local.x() - self.width() / 2.0
+        dy = local.y() - self.height() / 2.0
+        if math.hypot(dx, dy) < HUB_R - 2.0:
+            self._set_hover_index(-1)
+            return
+        idx = self.hit_test(QPointF(local))
+        if idx >= 0:
+            self._set_hover_index(idx)
+
+    def is_keyboard_mode(self) -> bool:
+        return self._keyboard_mode
 
     def file_paths(self) -> list[str]:
         return list(self._file_paths)
@@ -385,11 +419,34 @@ class TangerineWheel(QWidget):
         count = len(self._items)
         if count == 0:
             return -1
+        if count == 1 and self._items[0].kind == "info":
+            return -1
         dx = local.x() - self.width() / 2.0
         dy = local.y() - self.height() / 2.0
         radius = math.hypot(dx, dy)
-        if radius < R_IN - 6.0 or radius > R_OUT + 10.0:
+        if radius < HUB_R - 2.0 or radius > R_OUT + 16.0:
             return -1
+        angle = math.degrees(math.atan2(dy, dx))
+        step = 360.0 / count
+        for index in range(count):
+            target = -90.0 + (index + 0.5) * step
+            difference = (angle - target + 540.0) % 360.0 - 180.0
+            if abs(difference) <= step / 2.0:
+                return index
+        return -1
+
+    def is_over_petal(self, local: QPointF) -> bool:
+        """True when *local* is physically over an active petal (not in a gap or hub)."""
+        count = len(self._items)
+        if count == 0:
+            return False
+        if count == 1 and self._items[0].kind == "info":
+            return False
+        dx = local.x() - self.width() / 2.0
+        dy = local.y() - self.height() / 2.0
+        radius = math.hypot(dx, dy)
+        if radius < R_IN - 4.0 or radius > R_OUT + 8.0:
+            return False
         angle = math.degrees(math.atan2(dy, dx))
         step = 360.0 / count
         half = step / 2.0 - GAP_DEG * 0.35
@@ -397,8 +454,8 @@ class TangerineWheel(QWidget):
             target = -90.0 + (index + 0.5) * step
             difference = (angle - target + 540.0) % 360.0 - 180.0
             if abs(difference) <= half:
-                return index
-        return -1
+                return True
+        return False
 
     def _set_hover_index(self, index: int) -> None:
         if index == self._hover:
@@ -459,35 +516,55 @@ class TangerineWheel(QWidget):
             event.ignore()
             return
         files = self._merge_files(files)
-        self._file_paths = files
-        if self._factory is not None:
-            self.set_items(self._factory(files))
-        if not self._items:
-            event.ignore()
-            return
+        files_changed = (
+            set(files) != set(self._file_paths)
+            or len(files) != len(self._file_paths)
+            or not self._items
+        )
+        if files_changed:
+            self._file_paths = files
+            if self._factory is not None:
+                self.set_items(self._factory(files), animate=False)
+        else:
+            self._file_paths = files
         subtitle = (
             Path(files[0]).name
             if len(files) == 1
             else i18n.tr("wheel.files_count", n=len(files))
         )
         self._prompt = (self._prompt[0], subtitle)
-        self.update()
         self._accept_copy(event)
+        idx = self.hit_test(event.position())
+        if idx >= 0:
+            self._set_hover_index(idx)
 
     def dragMoveEvent(self, event) -> None:
-        self._set_hover_index(self.hit_test(event.position()))
+        idx = self.hit_test(event.position())
+        if idx >= 0:
+            self._set_hover_index(idx)
+        else:
+            dx = event.position().x() - self.width() / 2.0
+            dy = event.position().y() - self.height() / 2.0
+            if math.hypot(dx, dy) < HUB_R - 2.0:
+                self._set_hover_index(-1)
         self._accept_copy(event)
 
     def dragLeaveEvent(self, event) -> None:
-        self._set_hover_index(-1)
+        pass
 
     def dropEvent(self, event) -> None:
         if not self._accept_copy(event):
             return
-        index = self.hit_test(event.position())
+        local = event.position()
+        index = self.hit_test(local)
         files = list(self._file_paths)
-        if 0 <= index < len(self._items):
-            key = self._items[index].key
+        if 0 <= index < len(self._items) and self.is_over_petal(local):
+            item = self._items[index]
+            if item.kind == "info":
+                self.reset()
+                self.hide()
+                return
+            key = item.key
             self.reset()
             self.hide()
             self.activated.emit(files, key)
@@ -496,9 +573,18 @@ class TangerineWheel(QWidget):
             self.hide()
 
     def mouseMoveEvent(self, event) -> None:
-        self._set_hover_index(self.hit_test(event.position()))
+        idx = self.hit_test(event.position())
+        if idx >= 0:
+            self._set_hover_index(idx)
+        else:
+            dx = event.position().x() - self.width() / 2.0
+            dy = event.position().y() - self.height() / 2.0
+            if math.hypot(dx, dy) < HUB_R - 2.0:
+                self._set_hover_index(-1)
 
     def leaveEvent(self, event) -> None:
+        if self._file_paths or self._keyboard_mode:
+            return
         self._set_hover_index(-1)
 
     def mousePressEvent(self, event) -> None:
@@ -530,6 +616,24 @@ class TangerineWheel(QWidget):
             event.accept()
             return
         super().wheelEvent(event)
+
+    def navigate_step(self, step: int) -> None:
+        count = len(self._items)
+        if count == 0:
+            return
+        if 0 <= self._hover < count:
+            self._set_hover_index((self._hover + step) % count)
+        else:
+            self._set_hover_index(0 if step > 0 else count - 1)
+
+    def activate_current(self) -> None:
+        count = len(self._items)
+        if 0 <= self._hover < count:
+            key_name = self._items[self._hover].key
+            files = list(self._file_paths)
+            self.reset()
+            self.hide()
+            self.activated.emit(files, key_name)
 
     def keyPressEvent(self, event) -> None:
         key = event.key()
@@ -576,6 +680,9 @@ class TangerineWheel(QWidget):
         self.update()
 
     def _animate_hover(self) -> None:
+        if self._hover_anim is not None:
+            self._hover_anim.stop()
+            self._hover_anim = None
         count = len(self._items)
         start = {index: self._hover_value(index) for index in range(count)}
         target = {index: (1.0 if index == self._hover else 0.0) for index in range(count)}
@@ -599,6 +706,9 @@ class TangerineWheel(QWidget):
         animation.start()
 
     def _animate_capsule(self, target: float) -> None:
+        if self._capsule_anim is not None:
+            self._capsule_anim.stop()
+            self._capsule_anim = None
         animation = QVariantAnimation(self)
         animation.setStartValue(float(self._capsule_t))
         animation.setEndValue(float(target))
@@ -733,12 +843,12 @@ class TangerineWheel(QWidget):
         tokens = theme.hud(self._dark)
         self._paint_halo(painter, center, tokens)
         if count == 0:
-            # An empty wheel must still paint an opaque surface. The window is
-            # layered (WA_TranslucentBackground) and Windows derives both
-            # mouse hit-testing and OLE drop targeting from the painted
-            # pixels; a fully transparent window is click-through, so it would
-            # never receive ``dragEnter`` and could never fill its petals.
             self._paint_hub(painter, center, tokens)
+            painter.end()
+            return
+        if count == 1 and self._items[0].kind == "info":
+            self._paint_hub(painter, center, tokens)
+            self._paint_info_card(painter, center, self._items[0].label, tokens)
             painter.end()
             return
         step = 360.0 / count
@@ -810,7 +920,7 @@ class TangerineWheel(QWidget):
         ink = _mix(base_ink, theme.qcolor(HOVER_INK), hover)
         painter.save()
         painter.setOpacity(alpha)
-        if item.kind == "tool":
+        if item.kind in ("tool", "action"):
             self._paint_tool_content(
                 painter, center, angle, radius_in, radius_out, item, ink, step, scale
             )
@@ -947,6 +1057,43 @@ class TangerineWheel(QWidget):
             lines = lines[:limit]
             lines[-1] = lines[-1] + "\u2026"
         return lines
+
+    def _paint_info_card(self, painter: QPainter, center: QPointF, text: str, tokens: dict) -> None:
+        painter.save()
+        card_w = min(float(self.width() - 20), max(170.0, HUB_R * 2.1))
+        card_h = 64.0
+        rect = QRectF(center.x() - card_w / 2.0, center.y() - card_h / 2.0, card_w, card_h)
+
+        painter.setPen(QPen(QColor(255, 255, 255, 45 if self._dark else 130), 1.0))
+        painter.setBrush(QColor(0, 0, 0, 40 if self._dark else 15))
+        painter.drawRoundedRect(rect, 10.0, 10.0)
+
+        # Info icon
+        icon_rect = QRectF(rect.center().x() - 9.0, rect.top() + 7.0, 18.0, 18.0)
+        painter.setPen(QPen(theme.qcolor(theme.ACCENT), 1.8))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(icon_rect)
+        painter.drawText(icon_rect, int(Qt.AlignmentFlag.AlignCenter), "i")
+
+        # Message text
+        font = QFont(self.font())
+        font.setPixelSize(10)
+        font.setWeight(QFont.Weight.DemiBold)
+        painter.setFont(font)
+        painter.setPen(theme.qcolor(tokens["icon"]))
+        msg_rect = QRectF(rect.left() + 6, rect.top() + 27, rect.width() - 12, 18)
+        painter.drawText(msg_rect, int(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop), text)
+
+        # Subtitle hint
+        sub_font = QFont(self.font())
+        sub_font.setPixelSize(9)
+        painter.setFont(sub_font)
+        hint_color = theme.qcolor(tokens["icon"])
+        hint_color.setAlpha(170)
+        painter.setPen(hint_color)
+        sub_rect = QRectF(rect.left() + 6, rect.top() + 45, rect.width() - 12, 16)
+        painter.drawText(sub_rect, int(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop), i18n.tr("wheel.actions_hint"))
+        painter.restore()
 
     def _paint_hub(self, painter: QPainter, center: QPointF, tokens: dict) -> None:
         grow = _ease_out(self._global_appear())

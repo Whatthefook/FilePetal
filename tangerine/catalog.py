@@ -513,3 +513,26 @@ def conversion_paths(target_ext: str, paths_: list[Path]) -> list[Path]:
         for p in paths_
         if any(c.target_ext == target_ext for c in conversions_for([p]))
     ]
+
+
+@dataclass(frozen=True)
+class ActionItem:
+    id: str
+    label: str
+
+
+ACTIONS = [
+    ActionItem("act.share", "Share"),
+    ActionItem("act.shelf", "Float"),
+    ActionItem("act.copy_ref", "Copy Files"),
+    ActionItem("act.move", "Move to Folder"),
+    ActionItem("act.copy_path", "Copy Path"),
+    ActionItem("act.terminal", "Open in Terminal"),
+]
+
+
+def actions_for(paths_: list[Path]) -> list[ActionItem]:
+    """Actions offered for the given selection."""
+    if not paths_:
+        return []
+    return list(ACTIONS)

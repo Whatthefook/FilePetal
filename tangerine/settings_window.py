@@ -374,8 +374,11 @@ class SettingsWindow(QWidget):
             i18n.tr("settings.wheels.conversions"), "conversionWheelDragModifierMask")
         self._tools_checks = ModifierChecks(
             i18n.tr("settings.wheels.tools"), "toolsWheelDragModifierMask")
+        self._actions_checks = ModifierChecks(
+            i18n.tr("settings.wheels.actions"), "actionsWheelDragModifierMask")
         layout.addWidget(self._conversion_checks)
         layout.addWidget(self._tools_checks)
+        layout.addWidget(self._actions_checks)
 
         sticky_group = QGroupBox(i18n.tr("settings.wheels.sticky"))
         sticky_layout = QVBoxLayout(sticky_group)
@@ -523,18 +526,33 @@ class SettingsWindow(QWidget):
         layout.addWidget(blurb)
 
         not_found = i18n.tr("settings.about.not_found")
-        for name, value in (
+
+        # Dependency and Offline Status
+        dep_group = QGroupBox("Dependencies & Status")
+        dep_layout = QVBoxLayout(dep_group)
+        dep_layout.setSpacing(4)
+
+        import importlib.util
+        def _pkg_status(pkg):
+            return "Active (Local)" if importlib.util.find_spec(pkg) else not_found
+
+        dep_rows = [
+            ("Offline Mode", "Enabled (Zero network / Zero cloud)"),
             (i18n.tr("settings.about.ffmpeg"), ffmpeg_path() or not_found),
             (i18n.tr("settings.about.ffprobe"), ffprobe_path() or not_found),
-            (i18n.tr("settings.about.rar_writer"), rar_path() or not_found),
-            (i18n.tr("settings.about.rar_reader"), unrar_path() or not_found),
+            ("Pillow / HEIF", _pkg_status("PIL") + " / " + _pkg_status("pillow_heif")),
+            ("PDFium / ReportLab", _pkg_status("pypdfium2") + " / " + _pkg_status("reportlab")),
+            ("Office (Docx / XLSX / PPTX)", _pkg_status("docx") + " / " + _pkg_status("openpyxl") + " / " + _pkg_status("pptx")),
+            ("OCR (ONNXRuntime)", _pkg_status("onnxruntime")),
             (i18n.tr("settings.about.settings_file"), str(paths.settings_file())),
             (i18n.tr("settings.about.log"), str(paths.log_file())),
-        ):
-            row = QLabel(f"{name}: {value}")
+        ]
+        for name, value in dep_rows:
+            row = QLabel(f"<b>{name}:</b> {value}")
             row.setWordWrap(True)
             row.setObjectName("dim")
-            layout.addWidget(row)
+            dep_layout.addWidget(row)
+        layout.addWidget(dep_group)
 
         buttons = QHBoxLayout()
         folder = QPushButton(i18n.tr("settings.about.open_folder"))

@@ -1,47 +1,42 @@
 ; ---------------------------------------------------------------------------
-; Tangerine for Windows - Inno Setup 6 installer script
+; FilePetal for Windows - Inno Setup 6 installer script
 ;
-; Compile from anywhere (OutputDir is relative to this file):
-;     ISCC.exe /DAPPVER=1.5.0 packaging\installer.iss
+; Compile:
+;     ISCC.exe /DAPPVER=1.11.0 packaging\installer.iss
 ;
-; Requires the PyInstaller onedir output in ..\dist\Tangerine\ (produced by
-; packaging\build.ps1). APPVER defaults to "0.0.0" when not defined on the
-; command line.
-;
-; NOTE: the macro is APPVER, not VER: ISPP already reserves VER for the
-; compiler version (ISPPBuiltins.iss does `#if VER >= 0x03000000`), so a
-; command-line /DVER=<x.y.z> breaks preprocessing before this script runs.
+; Produces: FilePetal-Setup.exe
+; Per-user install, no UAC prompt, no admin rights required.
 ; ---------------------------------------------------------------------------
 
 #ifndef APPVER
-  #define APPVER "0.0.0"
+  #define APPVER "1.11.0"
 #endif
 
 #ifndef BUNDLEDIR
-  #define BUNDLEDIR "..\dist\Tangerine"
+  #define BUNDLEDIR "..\dist\FilePetal"
 #endif
 #ifndef OUTPUTDIR
   #define OUTPUTDIR "..\dist"
 #endif
 
-#define AppName "Tangerine for Windows"
-#define AppPublisher "Tangerine for Windows contributors"
-#define AppExeName "Tangerine.exe"
+#define AppName "FilePetal"
+#define AppPublisher "FilePetal Contributors"
+#define AppExeName "FilePetal.exe"
 
 [Setup]
 ; Stable AppId so upgrades replace the previous install instead of stacking.
-AppId={{6F1A9C2E-4B7D-4E8A-9C3F-2D5B8A1E7C40}
+AppId={{8B3F9A1D-5E2C-4A7B-9D1E-3F5B8A1E7C41}
 AppName={#AppName}
 AppVersion={#APPVER}
 AppVerName={#AppName} {#APPVER}
 AppPublisher={#AppPublisher}
-DefaultDirName={localappdata}\Programs\Tangerine
-DefaultGroupName=Tangerine
+DefaultDirName={localappdata}\Programs\FilePetal
+DefaultGroupName=FilePetal
 DisableProgramGroupPage=yes
 ; "lowest" = per-user install, no UAC prompt, no admin rights required.
 PrivilegesRequired=lowest
 OutputDir={#OUTPUTDIR}
-OutputBaseFilename=Tangerine-{#APPVER}-Setup
+OutputBaseFilename=FilePetal-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -55,19 +50,19 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "autostart"; Description: "Start Tangerine automatically when I sign in to Windows"; GroupDescription: "Startup:"
+Name: "autostart"; Description: "Start FilePetal automatically when I sign in to Windows"; GroupDescription: "Startup:"
 
 [Files]
 Source: "{#BUNDLEDIR}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\Tangerine"; Filename: "{app}\{#AppExeName}"
-Name: "{autodesktop}\Tangerine"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
-Name: "{userstartup}\Tangerine"; Filename: "{app}\{#AppExeName}"; Tasks: autostart
+Name: "{autoprograms}\FilePetal"; Filename: "{app}\{#AppExeName}"
+Name: "{autodesktop}\FilePetal"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
+Name: "{userstartup}\FilePetal"; Filename: "{app}\{#AppExeName}"; Tasks: autostart
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Parameters: "--register-shell"; Flags: runhidden waituntilterminated
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,Tangerine for Windows}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,FilePetal}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{app}\{#AppExeName}"; Parameters: "--unregister-shell"; Flags: runhidden waituntilterminated

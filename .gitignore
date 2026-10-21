@@ -17,6 +17,10 @@ desktop.ini
 assets/*_backup.*
 *.log
 
+# Large external tools are provisioned locally and are not source files.
+# Distribute licensed runtime binaries through a release package when appropriate.
+tools/*.exe
+
 # Secrets and local environment (never commit these)
 .env
 .env.*

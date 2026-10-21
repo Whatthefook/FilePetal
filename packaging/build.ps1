@@ -1,15 +1,15 @@
 # ---------------------------------------------------------------------------
-# Tangerine for Windows - one-shot packaging script (no admin required).
+# FilePetal for Windows - one-shot packaging script (no admin required).
 #
 #   powershell -ExecutionPolicy Bypass -File packaging\build.ps1
 #   powershell -ExecutionPolicy Bypass -File packaging\build.ps1 -DistDir build\validation-dist -SkipInstaller
 #
 # Steps:
 #   1. ensure PyInstaller is installed for the current Python
-#   2. build the onedir/windowed bundle: dist\Tangerine\
-#   3. create dist\Tangerine-<version>-windows-portable.zip
+#   2. build the onedir/windowed bundle: dist\FilePetal\
+#   3. create dist\FilePetal-<version>-windows-portable.zip
 #   4. if Inno Setup 6 (ISCC.exe) is available, compile
-#      dist\Tangerine-<version>-Setup.exe
+#      dist\FilePetal-Setup.exe
 # ---------------------------------------------------------------------------
 #Requires -Version 5.1
 [CmdletBinding()]
@@ -30,12 +30,12 @@ elseif (-not [System.IO.Path]::IsPathRooted($DistDir)) {
 }
 $DistDir = [System.IO.Path]::GetFullPath($DistDir)
 $OriginalBuildPath = $null
-$SpecRel = "packaging\tangerine.spec"
-$SpecFile = Join-Path $PSScriptRoot "tangerine.spec"
+$SpecRel = "packaging\filepetal.spec"
+$SpecFile = Join-Path $PSScriptRoot "filepetal.spec"
 $IssFile = Join-Path $PSScriptRoot "installer.iss"
 $PathsFile = Join-Path $RepoRoot "tangerine\paths.py"
-$BundleDir = Join-Path $DistDir "Tangerine"
-$BundleExe = Join-Path $BundleDir "Tangerine.exe"
+$BundleDir = Join-Path $DistDir "FilePetal"
+$BundleExe = Join-Path $BundleDir "FilePetal.exe"
 
 function Get-AppVersion {
     param([Parameter(Mandatory = $true)][string]$PathsFile)
@@ -76,7 +76,7 @@ function Find-Iscc {
 
 try {
     $Version = Get-AppVersion -PathsFile $PathsFile
-    Write-Host "==> Tangerine for Windows $Version" -ForegroundColor Cyan
+    Write-Host "==> FilePetal for Windows $Version" -ForegroundColor Cyan
 
     Write-Host "==> [1/4] Checking PyInstaller"
     & $Python -m PyInstaller --version
@@ -89,10 +89,6 @@ try {
     & (Join-Path $PSScriptRoot "build-shell.ps1")
     if ($LASTEXITCODE -ne 0) { throw "Native Explorer bridge build failed." }
     try {
-        # Resolve Windows-provided dependencies before unrelated SDK DLLs on
-        # the developer PATH. In particular, QtCore imports the Windows ICU
-        # API; collecting Poppler's versioned icuuc.dll from PATH shadows it
-        # and prevents Qt6Core.dll from loading in the frozen app.
         $OriginalBuildPath = $env:PATH
         $WindowsDllDirectories = @(
             (Join-Path $env:SystemRoot "System32"),
@@ -110,6 +106,13 @@ try {
         Write-Host "    Windows system DLL directories take precedence during analysis."
 
         Push-Location -LiteralPath $RepoRoot
+        if (Test-Path -LiteralPath $BundleDir) {
+            Remove-Item -LiteralPath $BundleDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $buildDir = Join-Path $RepoRoot "build\filepetal"
+        if (Test-Path -LiteralPath $buildDir) {
+            Remove-Item -LiteralPath $buildDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         try {
             & $Python -m PyInstaller --noconfirm --clean --distpath $DistDir $SpecRel
             if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE" }
@@ -123,6 +126,21 @@ try {
     }
     if (-not (Test-Path -LiteralPath $BundleExe)) {
         throw "Expected frozen executable not found: $BundleExe"
+    }
+
+    # Ensure bundled tools exist in BundleDir/tools as well
+    $RepoTools = Join-Path $RepoRoot "tools"
+    $BundleTools = Join-Path $BundleDir "tools"
+    if (Test-Path -LiteralPath $RepoTools) {
+        if (-not (Test-Path -LiteralPath $BundleTools)) {
+            New-Item -ItemType Directory -Path $BundleTools -Force | Out-Null
+        }
+        Get-ChildItem -LiteralPath $RepoTools | ForEach-Object {
+            $dest = Join-Path $BundleTools $_.Name
+            if (-not (Test-Path -LiteralPath $dest)) {
+                Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
+            }
+        }
     }
 
     Write-Host "==> Checking the frozen Qt WebEngine payload"
@@ -161,7 +179,10 @@ try {
     }
     $SmokeProcess.Refresh()
     if ($SmokeProcess.ExitCode -ne 0) {
-        $SmokeLog = Join-Path $env:TEMP "Tangerine-webengine-smoke.log"
+        $SmokeLog = Join-Path $env:TEMP "FilePetal-webengine-smoke.log"
+        if (-not (Test-Path -LiteralPath $SmokeLog)) {
+            $SmokeLog = Join-Path $env:TEMP "Tangerine-webengine-smoke.log"
+        }
         if (Test-Path -LiteralPath $SmokeLog) {
             Get-Content -LiteralPath $SmokeLog
         }
@@ -200,14 +221,14 @@ try {
     }
 
     Write-Host "==> [3/4] Creating portable archive"
-    $PortableZip = Join-Path $DistDir "Tangerine-$Version-windows-portable.zip"
+    $PortableZip = Join-Path $DistDir "FilePetal-$Version-windows-portable.zip"
     if (Test-Path -LiteralPath $PortableZip) { Remove-Item -LiteralPath $PortableZip -Force }
     Compress-Archive -Path (Join-Path $BundleDir "*") -DestinationPath $PortableZip -CompressionLevel Optimal
     if (-not (Test-Path -LiteralPath $PortableZip)) {
         throw "Portable archive was not created: $PortableZip"
     }
 
-    $Installer = Join-Path $DistDir "Tangerine-$Version-Setup.exe"
+    $Installer = Join-Path $DistDir "FilePetal-Setup.exe"
     $Iscc = $null
     if (-not $SkipInstaller) {
         Write-Host "==> [4/4] Building installer with Inno Setup 6"
@@ -233,11 +254,11 @@ try {
     }
 
     Write-Host ""
-    Write-Host "================= Tangerine build summary =================" -ForegroundColor Cyan
+    Write-Host "================= FilePetal build summary =================" -ForegroundColor Cyan
     Write-Host ("Version       : {0}" -f $Version)
     Write-Host ("Frozen bundle : {0}" -f $BundleDir)
     $exeItem = Get-Item -LiteralPath $BundleExe
-    Write-Host ("  Tangerine.exe : {0}" -f (Format-Size $exeItem.Length))
+    Write-Host ("  FilePetal.exe : {0}" -f (Format-Size $exeItem.Length))
     $zipItem = Get-Item -LiteralPath $PortableZip
     Write-Host ("Portable zip  : {0} ({1})" -f $PortableZip, (Format-Size $zipItem.Length))
     if (Test-Path -LiteralPath $Installer) {

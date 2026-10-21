@@ -76,7 +76,8 @@ class TrimVideoDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.trim_video.title"), parent)
         self._path = Path(path)
         self._duration = tools.probe_duration_seconds(self._path) or 0.0
-        self.pane = VideoPane(self._path, height=280)
+        self.pane = VideoPane(self._path, height=230)
+        self.resize(520, 420)
         self._body.addWidget(self.pane)
 
         form = QFormLayout()
@@ -183,7 +184,9 @@ class CropVideoDialog(ToolDialog):
             return
         self._frame = frame
         self.canvas = CropCanvas(frame)
-        self.canvas.setFixedSize(620, 380)
+        self.canvas.setMinimumSize(360, 220)
+        self.canvas.resize(520, 320)
+        self.resize(560, 460)
         self.canvas.changed = lambda rect: None
         self._body.insertWidget(self._body.indexOf(self.loading), self.canvas)
         self.loading.setVisible(False)
@@ -252,7 +255,8 @@ class SpeedDialog(ToolDialog):
     def __init__(self, path, parent: QWidget | None = None):
         super().__init__(i18n.tr("dlg.speed.title"), parent)
         self._path = Path(path)
-        self.pane = VideoPane(self._path, height=260)
+        self.pane = VideoPane(self._path, height=220)
+        self.resize(520, 400)
         self._body.addWidget(self.pane)
 
         row = QHBoxLayout()
@@ -310,7 +314,8 @@ class SnapshotsDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.snapshots.title"), parent)
         self._path = Path(path)
         self._duration = tools.probe_duration_seconds(self._path) or 0.0
-        self.pane = VideoPane(self._path, height=250)
+        self.pane = VideoPane(self._path, height=210)
+        self.resize(520, 390)
         self._body.addWidget(self.pane)
 
         row = QHBoxLayout()
@@ -447,7 +452,8 @@ class RedactVideoDialog(ToolDialog):
         super().__init__(i18n.tr("dlg.redact_video.title"), parent)
         self._path = Path(path)
         self._duration = tools.probe_duration_seconds(self._path) or 0.0
-        self.pane = VideoPane(self._path, height=260)
+        self.pane = VideoPane(self._path, height=220)
+        self.resize(540, 480)
         self._body.addWidget(self.pane)
 
         from PySide6.QtWidgets import QTableWidget

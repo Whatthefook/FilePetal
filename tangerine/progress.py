@@ -34,11 +34,11 @@ log = logging.getLogger("tangerine")
 
 _ACTIVE: set["ProgressWindow"] = set()
 
-WINDOW_WIDTH = 560
-CARD_RADIUS = 22.0
-SHADOW_MARGIN = 14
-CHIP_SIZE = 34
-BAR_HEIGHT = 10
+WINDOW_WIDTH = 360
+CARD_RADIUS = 16.0
+SHADOW_MARGIN = 12
+CHIP_SIZE = 26
+BAR_HEIGHT = 8
 ANCHOR_GAP = 18
 
 
@@ -203,7 +203,7 @@ class ProgressWindow(QWidget):
         self.title_label = QLabel(title)
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet(
-            f"font-weight: 700; font-size: 17px; color: {palette['text']};")
+            f"font-weight: 700; font-size: 14px; color: {palette['text']};")
         header.addWidget(self.title_label, 0, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addLayout(header)
 
@@ -270,15 +270,18 @@ class ProgressWindow(QWidget):
             )
             if screen is not None:
                 area = screen.availableGeometry()
-                x = self._anchor.x() - self.width() // 2
-                y = self._anchor.y() - height - ANCHOR_GAP
-                if y < area.top() + SHADOW_MARGIN:
-                    y = self._anchor.y() + ANCHOR_GAP
+                # Place near the drop point without covering the drop point or cursor
+                x = self._anchor.x() + 24
+                y = self._anchor.y() + 24
+                if x + self.width() > area.right() - SHADOW_MARGIN:
+                    x = self._anchor.x() - self.width() - 24
+                if y + height > area.bottom() - SHADOW_MARGIN:
+                    y = self._anchor.y() - height - 24
                 x = min(max(x, area.left() + SHADOW_MARGIN),
                         max(area.left(), area.right() - self.width() - SHADOW_MARGIN))
                 y = min(max(y, area.top() + SHADOW_MARGIN),
                         max(area.top(), area.bottom() - height - SHADOW_MARGIN))
-                self.move(x, y)
+                self.move(int(x), int(y))
                 return
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
         area = screen.availableGeometry() if screen is not None else None

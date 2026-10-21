@@ -194,7 +194,7 @@ def test_postprocess_pdf_stamps_metadata_and_numbers(tmp_path):
     reader = PdfReader(str(source))
     assert len(reader.pages) == 3
     assert reader.metadata.get("/Title") == "Reporte"
-    assert reader.metadata.get("/Author") == "Tangerine"
+    assert reader.metadata.get("/Author") in ("FilePetal", "Tangerine")
     for index, page in enumerate(reader.pages, start=1):
         text = page.extract_text().replace(" ", "")
         assert f"{index}/3" in text

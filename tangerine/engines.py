@@ -929,7 +929,16 @@ def _check_extract_size(total: int) -> None:
         raise EngineError(i18n.tr("err.archive_too_large"))
 
 
+def _validate_path_safety(dest: Path, relative_name: str) -> None:
+    dest_resolved = dest.resolve()
+    target = (dest / relative_name).resolve()
+    if not (target == dest_resolved or target.is_relative_to(dest_resolved)):
+        raise EngineError(i18n.tr("err.archive_traversal", name=relative_name))
+
+
 def _extract_tar(archive: tarfile.TarFile, dest: Path) -> None:
+    for member in archive.getmembers():
+        _validate_path_safety(dest, member.name)
     try:
         archive.extractall(dest, filter="data")
     except TypeError:
@@ -945,6 +954,8 @@ def _extract_archive(path: Path, dest: Path, ctx: Ctx) -> None:
     if suffix == ".zip":
         with zipfile.ZipFile(path) as archive:
             _check_extract_size(sum(info.file_size for info in archive.infolist()))
+            for info in archive.infolist():
+                _validate_path_safety(dest, info.filename)
             if ctx.cancelled():
                 raise EngineError(i18n.tr("err.cancelled"))
             archive.extractall(dest)

@@ -140,12 +140,12 @@ def _token_to_qss(value) -> str | None:
 
 
 def card_color(dark: bool) -> QColor:
-    return QColor(theme.palette(dark)["window"])
+    return QColor(26, 24, 22, 180) if dark else QColor(250, 248, 245, 195)
 
 
 def wash_color(dark: bool) -> QColor:
     tokens = hud_tokens(dark)
-    fallback = (30, 25, 22, 195) if dark else (255, 244, 236, 200)
+    fallback = (24, 21, 19, 130) if dark else (255, 248, 242, 135)
     return _as_qcolor(tokens.get("wash"), fallback)
 
 
@@ -278,7 +278,7 @@ class _DialogHeader(QWidget):
         self.hairline.setFixedHeight(1)
         self.hairline.setFrameShape(QFrame.Shape.NoFrame)
         self.hairline.setStyleSheet(
-            "background: %s;" % _border_color(theme.is_dark()).name())
+            "background: %s;" % ("rgba(255, 255, 255, 0.12)" if theme.is_dark() else "rgba(0, 0, 0, 0.08)"))
         outer.addWidget(self.hairline)
 
     def _style_close(self) -> None:
@@ -387,8 +387,21 @@ class ToolDialog(QDialog):
             button.setCursor(Qt.CursorShape.PointingHandCursor)
         for combo in self.findChildren(QComboBox):
             combo.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._fit_to_screen()
         self._capture_backdrop(force=True)
         super().showEvent(event)
+
+    def _fit_to_screen(self) -> None:
+        from PySide6.QtGui import QGuiApplication
+        screen = QGuiApplication.screenAt(self.pos()) or QGuiApplication.primaryScreen()
+        if screen is not None:
+            area = screen.availableGeometry()
+            max_w = int(area.width() * 0.90)
+            max_h = int(area.height() * 0.90)
+            w = min(self.width(), max_w)
+            h = min(self.height(), max_h)
+            if (w, h) != (self.width(), self.height()):
+                self.resize(w, h)
 
     def moveEvent(self, event) -> None:  # noqa: N802
         self._capture_backdrop()
@@ -417,21 +430,25 @@ class ToolDialog(QDialog):
             painter.setBrush(card_color(dark))
             painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
 
-        # Soft edge: a fading rim inside the card keeps the surface grounded.
-        shadow = _shadow_color(dark)
-        for inset, alpha in ((0.0, 22), (1.2, 12), (2.4, 6)):
-            pen = QPen(QColor(shadow.red(), shadow.green(), shadow.blue(), alpha), 1.0)
-            painter.setPen(pen)
+        # Translucent frosted glass highlights & boundary
+        if dark:
+            highlight = QColor(255, 255, 255, 50)
+            painter.setPen(QPen(highlight, 1.0))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(
-                rect.adjusted(inset, inset, -inset, -inset),
-                self.RADIUS, self.RADIUS)
-
-        border = _border_color(dark)
-        border.setAlpha(150)
-        painter.setPen(QPen(border, 1.0))
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
+                rect.adjusted(1.0, 1.0, -1.0, -1.0), self.RADIUS - 1, self.RADIUS - 1)
+            border = QColor(255, 255, 255, 36)
+            painter.setPen(QPen(border, 1.0))
+            painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
+        else:
+            highlight = QColor(255, 255, 255, 190)
+            painter.setPen(QPen(highlight, 1.0))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(
+                rect.adjusted(1.0, 1.0, -1.0, -1.0), self.RADIUS - 1, self.RADIUS - 1)
+            border = QColor(0, 0, 0, 32)
+            painter.setPen(QPen(border, 1.0))
+            painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
         painter.end()
 
     # -- buttons -----------------------------------------------------------

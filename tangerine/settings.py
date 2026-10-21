@@ -18,6 +18,7 @@ DEFAULTS: dict[str, Any] = {
     "appearanceTheme": "system",
     "conversionWheelDragModifierMask": "shift",
     "toolsWheelDragModifierMask": "alt+shift",
+    "actionsWheelDragModifierMask": "ctrl+shift",
     "wheelToggleHotkey": "ctrl+shift+w",
     "soundsAndHapticsEnabled": True,
     "conversionFanTheme": "glass",

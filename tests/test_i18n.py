@@ -21,14 +21,14 @@ def test_english_is_the_default():
     i18n.set_language(i18n.DEFAULT_LANGUAGE)
     assert i18n.current_language() == "en"
     assert i18n.tr("wheel.convert") == "Convert"
-    assert i18n.tr("tray.quit") == "Quit Tangerine"
+    assert i18n.tr("tray.quit") == "Quit FilePetal"
 
 
 def test_spanish_translations():
     i18n.set_language("es")
     assert i18n.current_language() == "es"
     assert i18n.tr("wheel.convert") == "Convertir"
-    assert i18n.tr("tray.quit") == "Salir de Tangerine"
+    assert i18n.tr("tray.quit") == "Salir de FilePetal"
     assert i18n.tr("tool.img.compress") == "Comprimir"
     assert i18n.tr("progress.cancel") == "Cancelar"
 

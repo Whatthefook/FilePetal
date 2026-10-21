@@ -1,8 +1,8 @@
 # UTF-8
 #
-# Windows version resource template for Tangerine.exe.
+# Windows version resource template for FilePetal.exe.
 #
-# This file is NOT used directly: packaging\tangerine.spec reads it at build
+# This file is NOT used directly: packaging\filepetal.spec reads it at build
 # time, replaces the @@VERSION_TUPLE@@ / @@VERSION@@ placeholders with the
 # current APP_VERSION from tangerine\paths.py, and writes the result to
 # packaging\_version_info_generated.txt (which is what PyInstaller consumes).
@@ -21,12 +21,12 @@ VSVersionInfo(
     StringFileInfo([
       StringTable(
         '040904B0',
-        [StringStruct('CompanyName', 'Tangerine for Windows contributors'),
-         StringStruct('FileDescription', 'Tangerine for Windows'),
+        [StringStruct('CompanyName', 'FilePetal Contributors'),
+         StringStruct('FileDescription', 'FilePetal for Windows'),
          StringStruct('FileVersion', '@@VERSION@@'),
-         StringStruct('InternalName', 'Tangerine'),
-         StringStruct('OriginalFilename', 'Tangerine.exe'),
-         StringStruct('ProductName', 'Tangerine for Windows'),
+         StringStruct('InternalName', 'FilePetal'),
+         StringStruct('OriginalFilename', 'FilePetal.exe'),
+         StringStruct('ProductName', 'FilePetal for Windows'),
          StringStruct('ProductVersion', '@@VERSION@@')])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])

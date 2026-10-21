@@ -12,8 +12,8 @@
   <meta property="og:image" content="./assets/wheel-light.png">
   <meta property="og:url" content="https://whatthefook.github.io/FilePetal/">
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
-  <link rel="stylesheet" href="./style.css?v=20261022">
-  <script src="./app.js?v=20261022" defer></script>
+  <link rel="stylesheet" href="./style.css?v=20261022-2">
+  <script src="./app.js?v=20261022-2" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -60,7 +60,7 @@
 <header class="section-heading">
       <p class="eyebrow">Interactive preview</p>
       <h2>Try the FilePetal wheel.</h2>
-      <p>This Windows-style preview uses sample files. Double-click an icon to pick it up, drag it, and hold Shift, Alt + Shift, or Ctrl + Shift. The wheel stays open after release so you can choose a petal.</p>
+      <p>This Windows-style preview uses sample files. Click and drag any icon, then hold a keyboard shortcut while moving it. The wheel stays open after release so you can choose a petal.</p>
     </header>
 
     <section class="demo-workspace" aria-label="FilePetal desktop gesture demo">
@@ -98,7 +98,7 @@
           <div class="wheel-center"><small id="wheel-mode">CONVERT</small><strong id="wheel-filename">sunset.jpg</strong><span>Select a petal</span></div>
         </div>
 
-        <div class="desktop-toast" id="desktop-toast" aria-live="polite">Double-click a sample file to pick it up.</div>
+        <div class="desktop-toast" id="desktop-toast" aria-live="polite">Click and drag an icon. Hold a keyboard shortcut to open a wheel.</div>
       </div>
       <div class="desktop-taskbar" aria-hidden="true">
         <span class="taskbar-start"><i></i><i></i><i></i><i></i></span>
@@ -108,15 +108,10 @@
       </div>
     </section>
 
-    <div class="demo-controls">
+    <div class="demo-controls" aria-label="Keyboard controls for the desktop preview">
       <div>
-        <p class="control-heading">Try a wheel</p>
-        <p class="control-copy">Double-click an icon and drag with a shortcut, or select a sample and use one of these buttons to open a wheel.</p>
-      </div>
-      <div class="shortcut-buttons" aria-label="Preview FilePetal shortcuts">
-        <button type="button" class="shortcut-button" data-mode="convert" aria-pressed="false"><kbd>Shift</kbd><span>Convert</span></button>
-        <button type="button" class="shortcut-button" data-mode="tools" aria-pressed="false"><kbd>Alt + Shift</kbd><span>Tools</span></button>
-        <button type="button" class="shortcut-button" data-mode="actions" aria-pressed="false"><kbd>Ctrl + Shift</kbd><span>Actions</span></button>
+        <p class="control-heading">Use your keyboard while dragging</p>
+        <p class="control-copy">Hold Shift for Convert, Ctrl + Shift for Actions, or Ctrl + Alt (also Alt + Shift) for Tools. Release the mouse over the desktop, then choose a petal.</p>
       </div>
     </div>
     <div class="demo-feedback" id="demo-feedback" role="status" aria-live="polite">This is a visual preview. It does not open or change real files.</div>
@@ -200,7 +195,7 @@
       <p>The current public packages do not update themselves. Quit FilePetal, download and extract the newer ZIP into a new folder, and launch that copy. After confirming it works, you can remove the old app folder and the old ZIP. Your preferences are kept separately in your user profile.</p>
       <p>The tray menu’s <strong>Check for Updates</strong> entry is currently a manual-update notice; it does not yet check GitHub for a newer version. A useful next step is an in-app version check that offers the latest download. Automatic installation should wait until each platform has a reliable, signed update package.</p>
     </section>
-    <section class="tracking-note" aria-labelledby="tracking-title"><h2 id="tracking-title">Where the counts live</h2><p>Each number beside a download button comes from its ZIP asset on GitHub Releases. The public Releases page is the tracking dashboard; open an older release to see its package totals. GitHub does not identify individual downloaders, so these numbers are not unique-user counts.</p><a href="https://github.com/Whatthefook/FilePetal/releases" target="_blank" rel="noopener noreferrer">Open the GitHub Releases dashboard ↗</a></section><p class="external-link-row"><a href="https://github.com/Whatthefook/FilePetal/releases" target="_blank" rel="noopener noreferrer">Release notes and previous builds on GitHub ↗</a></p>
+    <p class="external-link-row"><a href="https://github.com/Whatthefook/FilePetal/releases" target="_blank" rel="noopener noreferrer">Release notes and previous builds on GitHub ↗</a></p>
 </section>
 
   </main>

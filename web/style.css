@@ -166,7 +166,6 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 .desktop-file:nth-child(4) { top: 30px; left: 150px; }
 .desktop-file:nth-child(5) { top: 160px; left: 160px; }
 .desktop-file:hover, .desktop-file.is-selected { border-color: rgb(255 255 255 / 28%); background: rgb(255 255 255 / 11%); }
-.desktop-file.is-armed { border-color: #f0bd8b; background: rgb(255 255 255 / 16%); }
 .desktop-file.is-dragging { z-index: 2; cursor: grabbing; transition: none; }
 .file-art { display: block; width: 48px; height: 56px; filter: drop-shadow(0 3px 2px rgb(0 0 0 / 13%)); }
 .file-paper { fill: #f7f4eb; stroke: #d5d3c9; stroke-width: 1; }
@@ -195,14 +194,9 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 .wheel-petal { position: absolute; top: 50%; left: 50%; max-width: 100px; min-height: 34px; padding: 6px 8px; transform: translate(-50%, -50%); border: 1px solid #c9c5b8; border-radius: 3px; color: #33352e; background: #fffdf8; box-shadow: 0 2px 5px rgb(0 0 0 / 9%); cursor: pointer; font-size: 9px; font-weight: 700; line-height: 1.15; text-align: center; white-space: normal; }
 .wheel-petal:hover, .wheel-petal:focus-visible { z-index: 1; border-color: var(--accent); color: var(--accent-dark); background: #fff4eb; }
 .wheel-empty { position: absolute; top: calc(50% + 76px); left: 50%; width: 160px; transform: translateX(-50%); color: #6d6d63; font-size: 9px; text-align: center; }
-.demo-controls { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 24px 0 15px; border-bottom: 1px solid var(--line); }
+.demo-controls { padding: 20px 0 15px; border-bottom: 1px solid var(--line); }
 .control-heading { margin-bottom: 3px; font-family: var(--display); font-size: 15px; font-weight: 700; }
-.control-copy { max-width: 490px; margin-bottom: 0; color: var(--muted); font-size: 12px; }
-.shortcut-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
-.shortcut-button { display: flex; min-height: 43px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 5px 10px; border: 1px solid var(--line); color: var(--ink); background: var(--surface); cursor: pointer; }
-.shortcut-button:hover, .shortcut-button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.shortcut-button kbd { padding: 0; color: var(--ink); background: transparent; font-family: var(--mono); font-size: 10px; }
-.shortcut-button span { color: var(--muted); font-size: 9px; }
+.control-copy { max-width: 720px; margin-bottom: 0; color: var(--muted); font-size: 12px; }
 .demo-feedback { min-height: 26px; padding-top: 12px; color: var(--muted); font-size: 12px; }
 .demo-reset, .text-button { padding: 0; border: 0; color: var(--accent-dark); background: transparent; cursor: pointer; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .demo-reset { margin-top: 9px; }
@@ -331,9 +325,6 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
   .gesture-wheel { width: min(290px, calc(100vw - 44px)); }
   .wheel-petal { max-width: 86px; min-height: 31px; padding: 5px 7px; font-size: 9px; }
   .wheel-center { width: 112px; height: 112px; }
-  .demo-controls { align-items: flex-start; flex-direction: column; gap: 13px; }
-  .shortcut-buttons { width: 100%; }
-  .shortcut-button { flex: 1; min-width: 100px; }
   .desktop-toast { right: 8px; bottom: 8px; max-width: calc(100% - 16px); font-size: 10px; }
   .download-row, .download-row-mac { grid-template-columns: 1fr auto; gap: 10px 12px; padding: 17px 0; }
   .download-platform { grid-column: 1 / -1; }
@@ -390,7 +381,6 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 .gesture-wheel[hidden] { display: none; }
 .desktop-toast { z-index: 8; }
 .demo-controls { padding-top: 22px; }
-.shortcut-button { min-width: 112px; }
 .site-footer { width: min(1160px, calc(100% - 48px)); }
 #downloads, #demo, #features, #mac-guide, #privacy, #faq, #top { scroll-margin-top: 88px; }
 
@@ -418,10 +408,6 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
   .page-section .download-row, .page-section .download-row-mac { grid-template-columns: 1fr auto; }
 }
 
-.tracking-note { max-width: 900px; margin-top: 34px; padding: 20px 22px; border-left: 3px solid var(--accent); background: var(--surface); }
-.tracking-note h2 { margin-bottom: 7px; font-size: 18px; }
-.tracking-note p { margin-bottom: 11px; color: var(--muted); font-size: 13px; }
-.tracking-note a { color: var(--accent-dark); font-size: 12px; font-weight: 700; text-underline-offset: 4px; }
 .use-row { grid-template-columns: 140px 1fr; }
 @media (max-width: 680px) {
   .use-row { grid-template-columns: 82px 1fr; }

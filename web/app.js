@@ -26,7 +26,7 @@
   const ACTIONS = ["Float shelf", "Copy files", "Move to folder", "Copy path", "Open in terminal", "Share"];
   const MODES = {
     convert: { label: "CONVERT", shortcut: "SHIFT", title: "Choose an output format" },
-    tools: { label: "TOOLS", shortcut: "ALT + SHIFT", title: "Choose a tool" },
+    tools: { label: "TOOLS", shortcut: "ALT + SHIFT / CTRL + ALT", title: "Choose a tool" },
     actions: { label: "ACTIONS", shortcut: "CTRL + SHIFT", title: "Choose a file action" }
   };
 
@@ -143,39 +143,32 @@
     const toast = document.getElementById("desktop-toast");
     const feedback = document.getElementById("demo-feedback");
     const files = Array.from(stage.querySelectorAll(".desktop-file"));
-    const previewButtons = Array.from(document.querySelectorAll(".shortcut-button"));
     let selected = null;
-    let armed = null;
     let dragging = null;
     let dragOrigin = null;
     let activePointerId = null;
     let liveMode = null;
     let wheelPinned = false;
+    let renderedWheelKey = null;
     let lastPointer = { x: 0, y: 0 };
 
     function say(message, detail) {
       if (toast) toast.textContent = message;
       if (feedback && detail) feedback.textContent = detail;
     }
-    function setSelected(file, isArmed) {
-      if (armed && armed !== file) armed.classList.remove("is-armed");
+    function setSelected(file) {
       selected = file;
       files.forEach(function (el) {
         const active = el === file;
         el.classList.toggle("is-selected", active);
         el.setAttribute("aria-pressed", String(active));
       });
-      if (isArmed) {
-        armed = file;
-        file.classList.add("is-armed");
-        say(file.dataset.name + " picked up. Drag it while holding a shortcut.", "Picked up " + file.dataset.name + ". Drag inside the desktop and hold Shift, Alt + Shift, or Ctrl + Shift.");
-      }
     }
     function modeFromKeys(event) {
-      if (!event.shiftKey) return null;
-      if (event.ctrlKey) return "actions";
-      if (event.altKey) return "tools";
-      return "convert";
+      if (event.ctrlKey && event.shiftKey) return "actions";
+      if ((event.altKey && event.shiftKey) || (event.ctrlKey && event.altKey)) return "tools";
+      if (event.shiftKey) return "convert";
+      return null;
     }
     function formatOutputName(name, extension) {
       return name.replace(/\.[^.]+$/, "") + "." + extension.toLowerCase();
@@ -201,59 +194,65 @@
       wheel.hidden = true;
       liveMode = null;
       wheelPinned = false;
+      renderedWheelKey = null;
       stage.classList.remove("wheel-open");
-      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", "false"); });
     }
     function showWheel(mode, file, clientX, clientY, pin) {
       const sample = SAMPLE_FILES[file.dataset.file];
       if (!sample || !wheel || !petals) return;
+      const renderKey = mode + ":" + file.dataset.file;
+      const needsRender = renderedWheelKey !== renderKey || wheel.hidden;
       liveMode = mode;
       if (pin) wheelPinned = true;
       const config = MODES[mode];
-      const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
-      const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(240, stage.clientWidth - 20));
-      wheel.style.width = diameter + "px";
-      const radius = Math.max(76, diameter / 2 - 48);
-      petals.replaceChildren();
-      if (modeName) modeName.textContent = config.label;
-      if (filename) filename.textContent = sample.name;
-      choices.forEach(function (label, index) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "wheel-petal";
-        const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
-        button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
-        button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
-        button.style.maxWidth = choices.length > 8 ? "72px" : choices.length > 4 ? "82px" : "92px";
-        button.textContent = label;
-        button.setAttribute("aria-label", mode === "convert" ? "Preview conversion to " + label : "Preview " + label);
-        button.addEventListener("click", function () {
-          const message = mode === "convert"
-            ? formatOutputName(sample.name, label) + " would be saved beside the source file. This demo does not create it."
-            : mode === "tools"
-              ? label + " would open in FilePetal. The demo does not edit the sample."
-              : label + " would run on the selected file in the desktop app. This demo does not perform the action.";
-          say(label + " selected", message);
-          closeWheel();
+      if (needsRender) {
+        const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
+        const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(240, stage.clientWidth - 20));
+        wheel.style.width = diameter + "px";
+        const radius = Math.max(76, diameter / 2 - 48);
+        petals.replaceChildren();
+        if (modeName) modeName.textContent = config.label;
+        if (filename) filename.textContent = sample.name;
+        choices.forEach(function (label, index) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "wheel-petal";
+          const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
+          button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
+          button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
+          button.style.maxWidth = choices.length > 8 ? "72px" : choices.length > 4 ? "82px" : "92px";
+          button.textContent = label;
+          button.setAttribute("aria-label", mode === "convert" ? "Preview conversion to " + label : "Preview " + label);
+          button.addEventListener("click", function () {
+            const message = mode === "convert"
+              ? formatOutputName(sample.name, label) + " would be saved beside the source file. This demo does not create it."
+              : mode === "tools"
+                ? label + " would open in FilePetal. The demo does not edit the sample."
+                : label + " would run on the selected file in the desktop app. This demo does not perform the action.";
+            say(label + " selected", message);
+            closeWheel();
+          });
+          petals.appendChild(button);
         });
-        petals.appendChild(button);
-      });
-      if (!choices.length) {
-        const empty = document.createElement("p");
-        empty.className = "wheel-empty";
-        empty.textContent = "No dedicated tools for this file type";
-        petals.appendChild(empty);
+        if (!choices.length) {
+          const empty = document.createElement("p");
+          empty.className = "wheel-empty";
+          empty.textContent = "No dedicated tools for this file type";
+          petals.appendChild(empty);
+        }
+        renderedWheelKey = renderKey;
       }
       wheel.hidden = false;
       stage.classList.add("wheel-open");
       if (Number.isFinite(clientX) && Number.isFinite(clientY)) placeWheel(clientX, clientY);
-      const activeButton = previewButtons.find(function (button) { return button.dataset.mode === mode; });
-      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", String(button === activeButton)); });
-      if (mode === "convert") say(config.shortcut + " · " + sample.name, "Choose a format to preview the output filename. The demo does not create a file.");
-      else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
-      else say(config.shortcut + " · " + sample.name, "Choose an action to preview what the desktop app would do.");
+      if (needsRender) {
+        if (mode === "convert") say(config.shortcut + " · " + sample.name, "Choose a format to preview the output filename. The demo does not create a file.");
+        else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
+        else say(config.shortcut + " · " + sample.name, "Choose an action to preview what the desktop app would do.");
+      }
     }
     function startDrag(file, event) {
+      if (wheelPinned) closeWheel();
       dragging = file;
       activePointerId = event.pointerId;
       const stageRect = stage.getBoundingClientRect();
@@ -265,7 +264,7 @@
       event.preventDefault();
       const mode = modeFromKeys(event);
       if (mode) showWheel(mode, file, event.clientX, event.clientY, false);
-      else say("Dragging " + file.dataset.name, "Hold Shift for Convert, Alt + Shift for Tools, or Ctrl + Shift for Actions.");
+      else say("Dragging " + file.dataset.name, "Hold Shift for Convert, Ctrl + Shift for Actions, or Ctrl + Alt (also Alt + Shift) for Tools.");
     }
     function moveFile(event) {
       if (!dragging || !dragOrigin || event.pointerId !== activePointerId) return;
@@ -293,15 +292,15 @@
       dragOrigin = null;
       activePointerId = null;
       if (didMove) {
-        setSelected(file, true);
+        setSelected(file);
         if (modeAtDrop) {
           wheelPinned = true;
           say(MODES[modeAtDrop].label + " wheel ready", "The wheel stays open after you release the mouse. Click a petal to preview it.");
         } else {
           say("File placed on the desktop.", "The sample moved. Drag it again while holding a shortcut to open a wheel.");
         }
-      } else if (armed === file) {
-        say(file.dataset.name + " ready to drag", "Drag the selected sample while holding a shortcut. You can also use the three wheel buttons below.");
+      } else {
+        say(file.dataset.name + " selected", "Drag this sample and hold Shift, Ctrl + Shift, or Ctrl + Alt to open a wheel.");
       }
     }
     function reset() {
@@ -309,59 +308,48 @@
       dragging = null;
       dragOrigin = null;
       activePointerId = null;
-      armed = null;
       selected = null;
       files.forEach(function (file) {
-        file.classList.remove("is-selected", "is-armed", "is-dragging", "has-moved");
+        file.classList.remove("is-selected", "is-dragging", "has-moved");
         file.removeAttribute("style");
         file.setAttribute("aria-pressed", "false");
       });
-      say("Double-click a sample icon to pick it up.", "This is a visual preview only. It does not read, upload, or change local files.");
+      say("Drag any sample icon.", "This is a visual preview only. It does not read, upload, or change local files.");
     }
 
     files.forEach(function (file) {
       file.dataset.name = file.querySelector("span").textContent;
       file.addEventListener("pointerdown", function (event) {
         if (event.button !== 0) return;
-        if (armed === file) {
-          startDrag(file, event);
-          return;
-        }
         if (selected !== file && wheelPinned) closeWheel();
-        setSelected(file, false);
-        say(file.dataset.name + " selected", "Double-click to pick it up, then drag while holding a shortcut.");
+        setSelected(file);
+        startDrag(file, event);
       });
       file.addEventListener("click", function (event) { event.preventDefault(); });
-      file.addEventListener("dblclick", function (event) {
-        event.preventDefault();
-        setSelected(file, true);
-      });
       file.addEventListener("dragstart", function (event) { event.preventDefault(); });
     });
 
-    stage.addEventListener("pointermove", moveFile);
-    stage.addEventListener("pointerup", endDrag);
-    stage.addEventListener("pointercancel", endDrag);
+    window.addEventListener("pointermove", moveFile);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
     window.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeWheel();
+        return;
+      }
       if (!dragging) return;
       const mode = modeFromKeys(event);
       if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y, false);
+      else if (!wheelPinned) closeWheel();
     });
     window.addEventListener("keyup", function (event) {
-      if (!liveMode || wheelPinned || !dragging) return;
-      if (!modeFromKeys(event)) closeWheel();
+      if (!dragging || wheelPinned) return;
+      const mode = modeFromKeys(event);
+      if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y, false);
+      else closeWheel();
     });
-    window.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeWheel();
-    });
-
-    previewButtons.forEach(function (button) {
-      button.addEventListener("click", function () {
-        const file = selected || files[0];
-        setSelected(file, false);
-        const rect = file.getBoundingClientRect();
-        showWheel(button.dataset.mode, file, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
-      });
+    window.addEventListener("blur", function () {
+      if (dragging) endDrag({ pointerId: activePointerId });
     });
     const resetButton = document.getElementById("demo-reset");
     if (resetButton) resetButton.addEventListener("click", reset);
@@ -370,7 +358,6 @@
         closeWheel();
         files.forEach(function (file) { file.classList.remove("is-selected"); file.setAttribute("aria-pressed", "false"); });
         selected = null;
-        armed = null;
       }
     });
   }

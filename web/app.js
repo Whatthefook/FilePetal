@@ -149,6 +149,8 @@
     let activePointerId = null;
     let liveMode = null;
     let wheelPinned = false;
+    // Anchor the wheel at the first modifier event and keep it fixed for the drag.
+    let wheelPositioned = false;
     let renderedWheelKey = null;
     let lastPointer = { x: 0, y: 0 };
 
@@ -205,6 +207,7 @@
       wheel.hidden = true;
       liveMode = null;
       wheelPinned = false;
+      wheelPositioned = false;
       renderedWheelKey = null;
       stage.classList.remove("wheel-open");
     }
@@ -261,7 +264,10 @@
       }
       wheel.hidden = false;
       stage.classList.add("wheel-open");
-      if (Number.isFinite(clientX) && Number.isFinite(clientY)) placeWheel(clientX, clientY);
+      if (!wheelPositioned && Number.isFinite(clientX) && Number.isFinite(clientY)) {
+        placeWheel(clientX, clientY);
+        wheelPositioned = true;
+      }
       if (needsRender) {
         if (mode === "convert") say(config.shortcut + " · " + sample.name, "Choose a format to preview the output filename. The demo does not create a file.");
         else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
@@ -269,7 +275,7 @@
       }
     }
     function startDrag(file, event) {
-      if (wheelPinned) closeWheel();
+      if (wheelPinned || (wheel && !wheel.hidden)) closeWheel();
       dragging = file;
       activePointerId = event.pointerId;
       const stageRect = stage.getBoundingClientRect();

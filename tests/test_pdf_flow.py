@@ -50,7 +50,7 @@ def test_editor_creates_pdf_with_shared_progress_and_autoclose(qapp, images):
     # Image decoding/PDF writes can take longer on hosted Windows runners than
     # the Linux and macOS runners; leave enough time for the real worker and
     # progress-card auto-close lifecycle to finish.
-    pump(qapp, lambda: window._job_done, seconds=20)
+    pump(qapp, lambda: window.failed or (window._job_done and not window.isVisible()), seconds=20)
     assert not window.failed, window.error_view.toPlainText()
     assert not window.isVisible()
     pdf = PdfReader(window.outputs[0])

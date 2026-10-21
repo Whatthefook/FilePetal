@@ -248,30 +248,195 @@
       savedTheme = localStorage.getItem("filepetal_theme");
     } catch (_e) {}
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const activeTheme = savedTheme || (prefersDark ? "dark" : "dark"); // Default dark matches brand
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      toggleBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+      toggleBtn.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
+      const themeColor = document.querySelector('meta[name="theme-color"]');
+      if (themeColor) themeColor.setAttribute("content", theme === "dark" ? "#202621" : "#f6f3eb");
+    }
 
-    document.documentElement.setAttribute("data-theme", activeTheme);
+    applyTheme(savedTheme === "dark" ? "dark" : "light");
 
     toggleBtn.addEventListener("click", function () {
       const current = document.documentElement.getAttribute("data-theme") || "dark";
       const next = current === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
+      applyTheme(next);
       try {
         localStorage.setItem("filepetal_theme", next);
       } catch (_e) {}
     });
+  }
 
-    // Listen for OS scheme change if user hasn't set manual preference
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-      let userOverride = null;
-      try {
-        userOverride = localStorage.getItem("filepetal_theme");
-      } catch (_e) {}
-      if (!userOverride) {
-        document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
-      }
+  // Browser-only radial wheel preview. Sample files are labels and never leave this page.
+  const DEMO_SAMPLES = {
+    image: {
+      name: "coast.jpg",
+      type: "IMAGE",
+      outputs: [["WEBP", "smaller web image"], ["PNG", "lossless image"], ["PDF", "document"], ["DOCX", "editable page"]]
+    },
+    markdown: {
+      name: "README.md",
+      type: "MARKDOWN",
+      outputs: [["HTML", "web page"], ["PDF", "document"], ["TXT", "plain text"], ["PNG", "page image"]]
+    },
+    pdf: {
+      name: "brief.pdf",
+      type: "PDF",
+      outputs: [["DOCX", "editable text"], ["TXT", "plain text"], ["PNG", "page image"], ["JPG", "page image"]]
+    },
+    video: {
+      name: "walkthrough.mp4",
+      type: "VIDEO",
+      outputs: [["GIF", "animation"], ["WEBM", "video"], ["MOV", "video"], ["MP3", "audio track"]]
+    },
+    audio: {
+      name: "voice-note.wav",
+      type: "AUDIO",
+      outputs: [["MP3", "compressed audio"], ["M4A", "audio"], ["OGG", "audio"], ["FLAC", "lossless audio"]]
+    }
+  };
+
+  function initDemo() {
+    const stage = document.getElementById("demo-stage");
+    const wheel = document.getElementById("demo-wheel");
+    const petals = document.getElementById("demo-petals");
+    const modeLabel = document.getElementById("demo-mode-label");
+    const centerType = document.getElementById("demo-center-type");
+    const centerName = document.getElementById("demo-center-name");
+    const resultTitle = document.getElementById("demo-result-title");
+    const resultCopy = document.getElementById("demo-result-copy");
+    const resetButton = document.getElementById("demo-reset");
+    const sampleButtons = Array.from(document.querySelectorAll(".demo-file[data-sample]"));
+    if (!stage || !wheel || !petals || !sampleButtons.length) return;
+
+    let activeSampleKey = null;
+    let draggingSampleKey = null;
+    let droppedInStage = false;
+
+    function setResult(title, copy) {
+      if (resultTitle) resultTitle.textContent = title;
+      if (resultCopy) resultCopy.textContent = copy;
+    }
+
+    function outputName(filename, extension) {
+      const dot = filename.lastIndexOf(".");
+      const base = dot > 0 ? filename.slice(0, dot) : filename;
+      return base + "." + extension.toLowerCase();
+    }
+
+    function previewOutput(sample, format, button) {
+      const destination = outputName(sample.name, format);
+      petals.querySelectorAll(".demo-petal").forEach(function (petal) {
+        petal.classList.toggle("is-active", petal === button);
+        petal.setAttribute("aria-pressed", petal === button ? "true" : "false");
+      });
+      if (modeLabel) modeLabel.textContent = "Preview: " + format;
+      setResult("Output preview", destination + " would be saved beside " + sample.name + " in the desktop app. This browser preview does not create a file.");
+    }
+
+    function selectSample(key, source) {
+      const sample = DEMO_SAMPLES[key];
+      if (!sample) return;
+      activeSampleKey = key;
+      sampleButtons.forEach(function (button) {
+        const selected = button.dataset.sample === key;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+      });
+      stage.classList.add("has-file");
+      wheel.hidden = false;
+      if (centerType) centerType.textContent = sample.type;
+      if (centerName) centerName.textContent = sample.name;
+      if (modeLabel) modeLabel.textContent = source === "drag" ? "File picked up" : "Choose an output";
+      if (resetButton) resetButton.hidden = false;
+      petals.replaceChildren();
+
+      sample.outputs.forEach(function (output) {
+        const format = output[0];
+        const note = output[1];
+        const petal = document.createElement("button");
+        petal.type = "button";
+        petal.className = "demo-petal";
+        petal.setAttribute("aria-pressed", "false");
+        petal.setAttribute("aria-label", "Preview " + sample.name + " converted to " + format);
+
+        const formatLabel = document.createElement("span");
+        formatLabel.className = "demo-petal-format";
+        formatLabel.textContent = format;
+        const noteLabel = document.createElement("span");
+        noteLabel.className = "demo-petal-note";
+        noteLabel.textContent = note;
+        petal.append(formatLabel, noteLabel);
+        petal.addEventListener("click", function () { previewOutput(sample, format, petal); });
+        petals.appendChild(petal);
+      });
+
+      setResult("Choose a petal", "Four compatible output previews are ready for " + sample.name + ". Select one to see the result name.");
+    }
+
+    function resetDemo() {
+      activeSampleKey = null;
+      draggingSampleKey = null;
+      droppedInStage = false;
+      sampleButtons.forEach(function (button) {
+        button.classList.remove("is-selected", "is-dragging");
+        button.setAttribute("aria-pressed", "false");
+      });
+      stage.classList.remove("has-file", "is-dragover");
+      wheel.hidden = true;
+      petals.replaceChildren();
+      if (modeLabel) modeLabel.textContent = "Waiting for a file";
+      if (resetButton) resetButton.hidden = true;
+      setResult("Try a sample file", "Click or drag one from the left. Nothing is uploaded or changed.");
+    }
+
+    sampleButtons.forEach(function (button) {
+      const key = button.dataset.sample;
+      button.addEventListener("click", function () { selectSample(key, "click"); });
+      button.addEventListener("dragstart", function (event) {
+        draggingSampleKey = key;
+        droppedInStage = false;
+        button.classList.add("is-dragging");
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "copy";
+          event.dataTransfer.setData("text/plain", "filepetal-demo:" + key);
+        }
+        selectSample(key, "drag");
+      });
+      button.addEventListener("dragend", function () {
+        button.classList.remove("is-dragging");
+        stage.classList.remove("is-dragover");
+        if (!droppedInStage && activeSampleKey === key && modeLabel) modeLabel.textContent = "Preview ready";
+        draggingSampleKey = null;
+      });
     });
+
+    stage.addEventListener("dragover", function (event) {
+      if (!draggingSampleKey && !(event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files"))) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+      stage.classList.add("is-dragover");
+      if (draggingSampleKey && draggingSampleKey !== activeSampleKey) selectSample(draggingSampleKey, "drag");
+    });
+    stage.addEventListener("dragleave", function (event) {
+      if (!stage.contains(event.relatedTarget)) stage.classList.remove("is-dragover");
+    });
+    stage.addEventListener("drop", function (event) {
+      if (draggingSampleKey) {
+        event.preventDefault();
+        droppedInStage = true;
+        selectSample(draggingSampleKey, "drop");
+        if (modeLabel) modeLabel.textContent = "Choose an output";
+        setResult("File on the wheel", "Choose one of the petals to preview its output. The sample remains a mockup.");
+      } else if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
+        event.preventDefault();
+        setResult("Sample files only", "This browser demo does not read local files. Pick one of the five sample icons instead.");
+      }
+      stage.classList.remove("is-dragover");
+    });
+
+    if (resetButton) resetButton.addEventListener("click", resetDemo);
   }
 
   // Document ready initializer
@@ -284,6 +449,7 @@
   function init() {
     initTheme();
     detectOS();
+    initDemo();
     loadReleaseData();
   }
 })();

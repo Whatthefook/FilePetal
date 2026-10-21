@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FilePetal — Offline-First Desktop File Utility for Windows, macOS &amp; Linux</title>
   <meta name="description" content="An open-source, offline-first desktop file utility. Convert formats, launch focused editors, and organize files locally with a gesture-driven radial wheel.">
-  <meta name="theme-color" content="#141312">
+  <meta name="theme-color" content="#f6f3eb">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
@@ -38,6 +38,7 @@
 
       <nav class="site-nav" role="navigation" aria-label="Main Navigation">
         <ul class="nav-list">
+          <li><a href="#demo" class="nav-link">Try the wheel</a></li>
           <li><a href="#downloads" class="nav-link">Downloads</a></li>
           <li><a href="#features" class="nav-link">Features</a></li>
           <li><a href="#mac-guide" class="nav-link">Mac Guide</a></li>
@@ -74,95 +75,110 @@
       <div class="container hero-grid">
         <div class="hero-content">
           <div class="hero-eyebrow">
-            <span class="pulse-dot" aria-hidden="true"></span>
-            <span>100% Offline &middot; Local-First File Utility</span>
+            <span class="hero-eyebrow-mark" aria-hidden="true">01</span>
+            <span>Open-source desktop utility &middot; Windows, macOS, Linux</span>
           </div>
           <h1 id="hero-title" class="hero-title">
-            Your files <span class="gradient-text">never leave</span> your computer.
+            File work, without <span class="gradient-text">the menu maze.</span>
           </h1>
           <p class="hero-desc">
-            FilePetal is an open-source desktop utility inspired by gesture-driven workflows. Hold a modifier key while dragging files to convert formats, launch focused editors, or organize items on the fly&mdash;completely offline.
+            Hold a key, drag a file, choose a petal. FilePetal puts conversions, focused tools, and quick file actions close at hand. Your files stay on your device.
           </p>
 
           <div class="hero-cta-group">
-            <a href="#downloads" class="btn btn-primary btn-lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
-              </svg>
-              <span>Download FilePetal</span>
-            </a>
-            <a href="https://github.com/Whatthefook/FilePetal" class="btn btn-secondary btn-lg" target="_blank" rel="noopener noreferrer">
-              <span>View Source Code</span>
-            </a>
+            <a href="#demo" class="btn btn-primary btn-lg">Try the wheel <span aria-hidden="true">&darr;</span></a>
+            <a href="#downloads" class="btn btn-secondary btn-lg">Get FilePetal</a>
           </div>
 
           <div class="hero-release-strip" id="hero-release-strip">
-            <span class="strip-label">Latest Version:</span>
+            <span class="strip-label">Latest release</span>
             <a href="https://github.com/Whatthefook/FilePetal/releases/latest" class="strip-tag" id="hero-version-tag" target="_blank" rel="noopener noreferrer">v1.11.1</a>
-            <span class="strip-sep" aria-hidden="true">&bull;</span>
-            <span class="strip-meta">Free &amp; Open Source (MIT)</span>
-            <span class="strip-sep" aria-hidden="true">&bull;</span>
-            <span class="strip-meta">Zero telemetry</span>
+            <span class="strip-sep" aria-hidden="true">&middot;</span>
+            <span class="strip-meta">MIT licensed</span>
+            <span class="strip-sep" aria-hidden="true">&middot;</span>
+            <span class="strip-meta">Local processing</span>
           </div>
         </div>
 
-        <div class="hero-visual" aria-hidden="true">
-          <!-- Dimensional Floating Petals & Wheel Mockup -->
-          <div class="visual-stage">
-            <div class="floating-backdrop-glow"></div>
+        <div class="hero-side" aria-label="How the FilePetal gesture works">
+          <div class="hero-side-top">
+            <span class="hero-side-label">A shorter route</span>
+            <span class="hero-side-flower" aria-hidden="true">✿</span>
+          </div>
+          <div class="hero-step"><span>01</span><div><strong>Pick up a file</strong><small>From Explorer or the companion window</small></div></div>
+          <div class="hero-step"><span>02</span><div><strong>Open a wheel</strong><small>Convert, tools, or file actions</small></div></div>
+          <div class="hero-step"><span>03</span><div><strong>Choose a petal</strong><small>Only compatible options appear</small></div></div>
+          <div class="hero-side-foot"><kbd>Shift</kbd> Convert <i></i> <kbd>Alt + Shift</kbd> Tools <i></i> <kbd>Ctrl + Shift</kbd> Actions</div>
+        </div>
+      </div>
+    </section>
 
-            <!-- Petal particles in 3D perspective -->
-            <div class="petal-float petal-float-1">
-              <div class="petal-card">
-                <span class="petal-format">PNG</span>
-                <span class="petal-arrow">&rarr;</span>
-                <span class="petal-format accent">WEBP</span>
-              </div>
-            </div>
-            <div class="petal-float petal-float-2">
-              <div class="petal-card">
-                <span class="petal-icon">&#9986;</span>
-                <span class="petal-name">Crop Photo</span>
-              </div>
-            </div>
-            <div class="petal-float petal-float-3">
-              <div class="petal-card">
-                <span class="petal-icon">&#9874;</span>
-                <span class="petal-name">Float Shelf</span>
-              </div>
-            </div>
-            <div class="petal-float petal-float-4">
-              <div class="petal-card">
-                <span class="petal-format">MP4</span>
-                <span class="petal-arrow">&rarr;</span>
-                <span class="petal-format accent">GIF</span>
-              </div>
-            </div>
+    <!-- Interactive browser-only wheel preview -->
+    <section id="demo" class="demo-section" aria-labelledby="demo-title">
+      <div class="container">
+        <div class="demo-heading">
+          <div>
+            <div class="section-kicker"><span>02</span> Try the gesture</div>
+            <h2 id="demo-title">Drag a sample.<br><em>Meet its petals.</em></h2>
+          </div>
+          <p>Choose one of the sample files, then pick a format from the wheel. The real app follows the same idea beside your cursor.</p>
+        </div>
 
-            <!-- Main Radial Dial Mockup -->
-            <div class="wheel-mockup">
-              <img src="./assets/wheel-dark.png" alt="" width="340" height="340" class="wheel-preview-img dark-only">
-              <img src="./assets/wheel-light.png" alt="" width="340" height="340" class="wheel-preview-img light-only">
-              <div class="wheel-center-hud">
-                <span class="hud-mode">CONVERT</span>
-                <span class="hud-sub">Drop to process</span>
-              </div>
+        <div class="demo-panel">
+          <div class="demo-file-rail">
+            <div class="demo-rail-heading"><span>Sample files</span><span>5 types</span></div>
+            <p class="demo-rail-copy">Drag one into the work area, or click to preview.</p>
+            <div class="demo-samples" aria-label="Sample files to try">
+              <button class="demo-file" type="button" draggable="true" data-sample="image" aria-pressed="false">
+                <span class="demo-file-icon icon-image" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg></span>
+                <span class="demo-file-copy"><strong>coast.jpg</strong><small>Image &middot; 2.4 MB</small></span><span class="demo-grip" aria-hidden="true">&vellip;</span>
+              </button>
+              <button class="demo-file" type="button" draggable="true" data-sample="markdown" aria-pressed="false">
+                <span class="demo-file-icon icon-code" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></svg></span>
+                <span class="demo-file-copy"><strong>README.md</strong><small>Markdown &middot; 8 KB</small></span><span class="demo-grip" aria-hidden="true">&vellip;</span>
+              </button>
+              <button class="demo-file" type="button" draggable="true" data-sample="pdf" aria-pressed="false">
+                <span class="demo-file-icon icon-pdf" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6z"/><path d="M14 2v6h6M9 14h7M9 17h5"/></svg></span>
+                <span class="demo-file-copy"><strong>brief.pdf</strong><small>Document &middot; 1.1 MB</small></span><span class="demo-grip" aria-hidden="true">&vellip;</span>
+              </button>
+              <button class="demo-file" type="button" draggable="true" data-sample="video" aria-pressed="false">
+                <span class="demo-file-icon icon-video" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/><path d="m8 9 4 3-4 3z"/></svg></span>
+                <span class="demo-file-copy"><strong>walkthrough.mp4</strong><small>Video &middot; 18 MB</small></span><span class="demo-grip" aria-hidden="true">&vellip;</span>
+              </button>
+              <button class="demo-file" type="button" draggable="true" data-sample="audio" aria-pressed="false">
+                <span class="demo-file-icon icon-audio" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 10v4M22 9v6"/></svg></span>
+                <span class="demo-file-copy"><strong>voice-note.wav</strong><small>Audio &middot; 6.8 MB</small></span><span class="demo-grip" aria-hidden="true">&vellip;</span>
+              </button>
             </div>
+            <div class="demo-rail-note"><span class="demo-dot"></span> These are illustrations, not real files.</div>
+          </div>
 
-            <!-- Gesture Pill Hints -->
-            <div class="gesture-hints">
-              <div class="hint-pill">
-                <kbd>Shift</kbd> <span>Convert</span>
+          <div class="demo-stage-wrap">
+            <div class="demo-stage-topline"><span>THE WHEEL</span><span id="demo-mode-label">Waiting for a file</span></div>
+            <div class="demo-stage" id="demo-stage" aria-label="FilePetal interactive wheel preview">
+              <div class="demo-empty" id="demo-empty">
+                <div class="demo-drop-symbol" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                <strong>Drop a sample here</strong>
+                <span>Its compatible formats will open around it.</span>
               </div>
-              <div class="hint-pill">
-                <kbd>Alt+Shift</kbd> <span>Tools</span>
+              <div class="demo-wheel" id="demo-wheel" hidden>
+                <div class="demo-petals" id="demo-petals"></div>
+                <div class="demo-center">
+                  <span class="demo-center-file" id="demo-center-type">IMAGE</span>
+                  <strong id="demo-center-name">coast.jpg</strong>
+                  <span>Choose an output</span>
+                </div>
               </div>
-              <div class="hint-pill">
-                <kbd>Ctrl+Shift</kbd> <span>Actions</span>
-              </div>
+              <div class="demo-stage-corner" aria-hidden="true"><span></span> PREVIEW MODE</div>
+            </div>
+            <div class="demo-result" id="demo-result" role="status" aria-live="polite">
+              <span class="demo-result-mark" aria-hidden="true">↗</span>
+              <div><strong id="demo-result-title">Try a sample file</strong><span id="demo-result-copy">Click or drag one from the left. Nothing is uploaded or changed.</span></div>
+              <button class="demo-reset" id="demo-reset" type="button" hidden>Reset</button>
             </div>
           </div>
         </div>
+        <p class="demo-disclaimer">This is an interactive illustration. Conversions happen locally in the desktop app; this browser demo does not process files.</p>
       </div>
     </section>
 

@@ -235,7 +235,8 @@ def test_progress_reaches_one_only_after_pdf_is_published(tmp_path, monkeypatch)
 
     def assert_before_publish(src, dst):
         assert values and values[-1] < 1.0
-        assert not Path(dst).read_bytes()
+        placeholder = Path(dst).read_bytes()
+        assert placeholder and not placeholder.startswith(b"%PDF")
         return original_replace(src, dst)
 
     monkeypatch.setattr(image_pdf.os, "replace", assert_before_publish)

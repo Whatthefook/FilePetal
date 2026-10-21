@@ -177,7 +177,18 @@
       const bounds = stage.getBoundingClientRect();
       const size = wheel.offsetWidth || 300;
       const half = size / 2;
-      const x = Math.max(half + 8, Math.min(bounds.width - half - 8, clientX - bounds.left));
+      const pointerX = clientX - bounds.left;
+      const edgePadding = 10;
+      const pointerGap = 60;
+      const roomRight = bounds.width - pointerX;
+      const roomLeft = pointerX;
+      const canFitRight = roomRight >= size + pointerGap + edgePadding;
+      const canFitLeft = roomLeft >= size + pointerGap + edgePadding;
+      const side = canFitRight ? "right" : canFitLeft ? "left" : roomRight >= roomLeft ? "right" : "left";
+      const targetX = side === "right"
+        ? pointerX + half + pointerGap
+        : pointerX - half - pointerGap;
+      const x = Math.max(half + edgePadding, Math.min(bounds.width - half - edgePadding, targetX));
       const header = document.querySelector(".site-header");
       const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
       const minY = Math.max(half + 4, headerBottom + half + 4 - bounds.top);
@@ -209,7 +220,13 @@
         const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
         const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(240, stage.clientWidth - 20));
         wheel.style.width = diameter + "px";
-        const radius = Math.max(76, diameter / 2 - 48);
+        const center = wheel.querySelector(".wheel-center");
+        if (center) {
+          const centerSize = Math.round(diameter * 0.34);
+          center.style.width = centerSize + "px";
+          center.style.height = centerSize + "px";
+        }
+        const radius = Math.max(72, diameter / 2 - 45);
         petals.replaceChildren();
         if (modeName) modeName.textContent = config.label;
         if (filename) filename.textContent = sample.name;
@@ -220,7 +237,7 @@
           const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
           button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
           button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
-          button.style.maxWidth = choices.length > 8 ? "72px" : choices.length > 4 ? "82px" : "92px";
+          button.style.maxWidth = choices.length > 8 ? "64px" : choices.length > 4 ? "72px" : "76px";
           button.textContent = label;
           button.setAttribute("aria-label", mode === "convert" ? "Preview conversion to " + label : "Preview " + label);
           button.addEventListener("click", function () {

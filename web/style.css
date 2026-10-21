@@ -187,11 +187,12 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 .gesture-wheel { position: absolute; z-index: 5; top: var(--wheel-y, 50%); left: var(--wheel-x, 50%); width: min(310px, calc(100vw - 28px)); aspect-ratio: 1; transform: translate(-50%, -50%); border: 1px solid rgb(255 255 255 / 50%); border-radius: 50%; background: rgb(247 245 237 / 94%); box-shadow: 0 12px 36px rgb(0 0 0 / 27%); color: #282a25; backdrop-filter: blur(12px); }
 .gesture-wheel[hidden] { display: none; }
 .gesture-wheel::before { position: absolute; inset: 9px; border: 1px solid #d9d5c9; border-radius: 50%; content: ""; }
+.wheel-options { position: absolute; inset: 0; pointer-events: none; }
 .wheel-center { position: absolute; top: 50%; left: 50%; display: flex; width: 120px; height: 120px; flex-direction: column; align-items: center; justify-content: center; padding: 10px; transform: translate(-50%, -50%); border: 1px solid #d7d3c7; border-radius: 50%; background: #f7f5ed; text-align: center; }
 .wheel-center small { color: var(--accent-dark); font-family: var(--mono); font-size: 9px; letter-spacing: .1em; }
 .wheel-center strong { max-width: 104px; overflow: hidden; margin: 4px 0; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .wheel-center span { color: #77776e; font-size: 9px; }
-.wheel-petal { position: absolute; top: 50%; left: 50%; max-width: 100px; min-height: 34px; padding: 6px 8px; transform: translate(-50%, -50%); border: 1px solid #c9c5b8; border-radius: 3px; color: #33352e; background: #fffdf8; box-shadow: 0 2px 5px rgb(0 0 0 / 9%); cursor: pointer; font-size: 9px; font-weight: 700; line-height: 1.15; text-align: center; white-space: normal; }
+.wheel-petal { position: absolute; top: 50%; left: 50%; max-width: 100px; min-height: 34px; padding: 6px 8px; transform: translate(-50%, -50%); border: 1px solid #c9c5b8; border-radius: 3px; color: #33352e; background: #fffdf8; box-shadow: 0 2px 5px rgb(0 0 0 / 9%); cursor: pointer; font-size: 9px; font-weight: 700; line-height: 1.15; text-align: center; white-space: normal; pointer-events: auto; }
 .wheel-petal:hover, .wheel-petal:focus-visible { z-index: 1; border-color: var(--accent); color: var(--accent-dark); background: #fff4eb; }
 .wheel-empty { position: absolute; top: calc(50% + 76px); left: 50%; width: 160px; transform: translateX(-50%); color: #6d6d63; font-size: 9px; text-align: center; }
 .demo-controls { padding: 20px 0 15px; border-bottom: 1px solid var(--line); }

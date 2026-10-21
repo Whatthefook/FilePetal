@@ -1,4 +1,4 @@
-"""Filesystem locations used across FilePetal for Windows."""
+"""Portable filesystem locations used by FilePetal."""
 
 import os
 import shutil
@@ -29,11 +29,16 @@ def tools_dir() -> Path:
 
 
 def data_dir() -> Path:
-    base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-    path = Path(base) / APP_NAME
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA") or (Path.home() / "AppData" / "Roaming"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config"))
+    path = base / APP_NAME
     path.mkdir(parents=True, exist_ok=True)
     # Migrate legacy settings from Tangerine if present and not yet in FilePetal
-    old_path = Path(base) / "Tangerine"
+    old_path = base / "Tangerine"
     old_settings = old_path / "settings.json"
     new_settings = path / "settings.json"
     if old_settings.exists() and not new_settings.exists():
@@ -53,7 +58,7 @@ def log_file() -> Path:
 
 
 def icon_path() -> Path:
-    return assets_dir() / "tray.ico"
+    return assets_dir() / ("tray.ico" if sys.platform == "win32" else "tray.png")
 
 
 def icon_png() -> Path:

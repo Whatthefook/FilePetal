@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from PySide6.QtCore import QFileInfo, QPoint, QRectF, QSize, Qt, QUrl
@@ -341,7 +340,8 @@ class FilePetalShelf(QWidget):
     def _open_file(self, item: QListWidgetItem) -> None:
         p = item.data(Qt.ItemDataRole.UserRole)
         if p and Path(p).exists():
-            os.startfile(str(p))
+            from PySide6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(p)))
 
     def _copy_all(self) -> None:
         from PySide6.QtCore import QMimeData

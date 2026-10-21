@@ -7,7 +7,7 @@
 # Steps:
 #   1. ensure PyInstaller is installed for the current Python
 #   2. build the onedir/windowed bundle: dist\FilePetal\
-#   3. create dist\FilePetal-<version>-windows-portable.zip
+#   3. create dist\FilePetal-<version>-windows-x64.zip
 #   4. if Inno Setup 6 (ISCC.exe) is available, compile
 #      dist\FilePetal-Setup.exe
 # ---------------------------------------------------------------------------
@@ -221,7 +221,7 @@ try {
     }
 
     Write-Host "==> [3/4] Creating portable archive"
-    $PortableZip = Join-Path $DistDir "FilePetal-$Version-windows-portable.zip"
+    $PortableZip = Join-Path $DistDir "FilePetal-$Version-windows-x64.zip"
     if (Test-Path -LiteralPath $PortableZip) { Remove-Item -LiteralPath $PortableZip -Force }
     Compress-Archive -Path (Join-Path $BundleDir "*") -DestinationPath $PortableZip -CompressionLevel Optimal
     if (-not (Test-Path -LiteralPath $PortableZip)) {

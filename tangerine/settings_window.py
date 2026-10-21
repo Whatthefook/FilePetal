@@ -314,21 +314,23 @@ class SettingsWindow(QWidget):
         fullscreen_hint.setWordWrap(True)
         fullscreen_hint.setObjectName("dim")
         layout.addWidget(fullscreen_hint)
-        explorer = QGroupBox(i18n.tr("shell.title"))
-        explorer_layout = QVBoxLayout(explorer)
-        explorer_hint = QLabel(i18n.tr("shell.hint"))
-        explorer_hint.setWordWrap(True)
-        explorer_layout.addWidget(explorer_hint)
-        pdf_button = QPushButton(i18n.tr("pdf.images.title"))
-        pdf_button.clicked.connect(self._open_images_pdf)
-        explorer_layout.addWidget(pdf_button)
-        repair_button = QPushButton(i18n.tr("shell.repair"))
-        repair_button.clicked.connect(self._repair_explorer)
-        explorer_layout.addWidget(repair_button)
-        self._explorer_status = QLabel()
-        self._explorer_status.setWordWrap(True)
-        explorer_layout.addWidget(self._explorer_status)
-        layout.addWidget(explorer)
+        import sys
+        if sys.platform == "win32":
+            explorer = QGroupBox(i18n.tr("shell.title"))
+            explorer_layout = QVBoxLayout(explorer)
+            explorer_hint = QLabel(i18n.tr("shell.hint"))
+            explorer_hint.setWordWrap(True)
+            explorer_layout.addWidget(explorer_hint)
+            pdf_button = QPushButton(i18n.tr("pdf.images.title"))
+            pdf_button.clicked.connect(self._open_images_pdf)
+            explorer_layout.addWidget(pdf_button)
+            repair_button = QPushButton(i18n.tr("shell.repair"))
+            repair_button.clicked.connect(self._repair_explorer)
+            explorer_layout.addWidget(repair_button)
+            self._explorer_status = QLabel()
+            self._explorer_status.setWordWrap(True)
+            explorer_layout.addWidget(self._explorer_status)
+            layout.addWidget(explorer)
         layout.addStretch(1)
         return page
 
@@ -569,10 +571,10 @@ class SettingsWindow(QWidget):
         return page
 
     def _open_folder(self):
-        import subprocess
-
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
         data = paths.data_dir()
-        subprocess.Popen(["explorer", str(data)])
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(data)))
 
     def _reset(self):
         confirm = QMessageBox.question(

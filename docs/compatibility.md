@@ -1,6 +1,6 @@
 # FilePetal Compatibility Matrix & Engine Specifications
 
-FilePetal is an offline-first Windows 11 file conversion and productivity utility. All processing is executed **entirely on your local machine** using real, embedded open-source engines. No cloud services, external servers, telemetry, or network connections are ever utilized.
+FilePetal is a local-first file conversion and productivity utility for Windows, macOS, and Linux. Conversion and editing run on the local machine. Audio/video features require a separately installed FFmpeg/FFprobe engine; `.rar` support requires a separate RAR utility. The app does not upload files or use cloud conversion services.
 
 ---
 

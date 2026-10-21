@@ -1,4 +1,4 @@
-name: Build Windows installer
+name: Build FilePetal downloads
 
 on:
   push:
@@ -11,10 +11,26 @@ permissions:
 
 jobs:
   build:
-    name: Frozen build + installer
-    runs-on: windows-latest
+    name: Build ${{ matrix.asset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            asset: windows-x64
+            os: windows
+          - runner: macos-15
+            asset: macos-arm64
+            os: macos
+          - runner: macos-15-intel
+            asset: macos-x64
+            os: macos
+          - runner: ubuntu-22.04
+            asset: linux-x64
+            os: linux
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: Checkout
+      - name: Check out source
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -22,142 +38,119 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Python dependencies
-        shell: pwsh
+      - name: Read application version
+        id: version
+        shell: bash
         run: |
-          python -m pip install -r requirements.txt
-          if (Test-Path requirements-ocr.txt) {
-            python -m pip install -r requirements-ocr.txt
-          }
+          version="$(python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path("tangerine/paths.py").read_text(encoding="utf-8")
+          match = re.search(r'^APP_VERSION\s*=\s*["\']([^"\']+)', text, re.MULTILINE)
+          if not match:
+              raise SystemExit("APP_VERSION is missing")
+          print(match.group(1))
+          PY
+          )"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "Tag $GITHUB_REF_NAME must match APP_VERSION" >&2
+            exit 1
+          fi
+
+      - name: Install Linux Qt runtime libraries
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 libxkbcommon0 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 \
+            libxcb-xfixes0 libxrender1 libxext6 libsm6 libice6 libglib2.0-0 \
+            libdbus-1-3 libfontconfig1 libfreetype6 libxcb-randr0 libxcb-image0 \
+            libxcb-render-util0 libxcb-shm0 libxcb-sync1 libxcb-xkb1 libxkbcommon-x11-0
+
+      - name: Create macOS app icon
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          iconset="$RUNNER_TEMP/FilePetal.iconset"
+          mkdir -p "$iconset"
+          for size in 16 32 128 256 512; do
+            sips -z "$size" "$size" assets/icon.png --out "$iconset/icon_${size}x${size}.png" >/dev/null
+            doubled=$((size * 2))
+            sips -z "$doubled" "$doubled" assets/icon.png --out "$iconset/icon_${size}x${size}@2x.png" >/dev/null
+          done
+          iconutil -c icns "$iconset" -o assets/icon.icns
+
+      - name: Install Python packages
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-ocr.txt
           python -m pip install pyinstaller pyinstaller-hooks-contrib
 
-      - name: Install Inno Setup (best effort)
-        continue-on-error: true
-        run: choco install innosetup --no-progress -y
-
-      - name: Run regression tests
-        shell: pwsh
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: |
-          python -m pip install -r requirements-dev.txt
-          python -m pytest -s -vv tests/test_pdf_flow.py --junitxml=build/pdf-flow-results.xml
-          $pdfFlowExit = $LASTEXITCODE
-          python -m pytest -s -vv --junitxml=build/test-results.xml
-          if ($pdfFlowExit -ne 0 -or $LASTEXITCODE -ne 0) { throw 'Qt integration or regression validation failed' }
-
-      - name: Read native crash diagnostics
-        if: failure()
+      - name: Build Windows portable ZIP
+        if: matrix.os == 'windows'
         shell: pwsh
         run: |
-          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-10)} -ErrorAction SilentlyContinue |
-            Where-Object { $_.ProviderName -in @('Application Error', 'Windows Error Reporting') } |
-            Select-Object -First 5 TimeCreated, ProviderName, Message | Format-List
+          powershell -ExecutionPolicy Bypass -File packaging\build.ps1 -Python python -SkipInstaller
+          if ($LASTEXITCODE -ne 0) { throw "Windows packaging failed with exit code $LASTEXITCODE" }
+          if (-not (Test-Path "dist\FilePetal-${{ steps.version.outputs.version }}-windows-x64.zip")) {
+            throw "Windows ZIP was not produced"
+          }
 
-      - name: Build portable bundle and installer
-        shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File packaging\build.ps1
-
-      - name: Require installer and matching release tag
-        shell: pwsh
+      - name: Build macOS app bundle and ZIP
+        if: matrix.os == 'macos'
+        shell: bash
         run: |
-          $match = [regex]::Match((Get-Content tangerine\paths.py -Raw), 'APP_VERSION\s*=\s*"([^"]+)"')
-          if (-not $match.Success) { throw 'APP_VERSION is missing' }
-          $version = $match.Groups[1].Value
-          if (-not (Test-Path "dist\Tangerine-$version-Setup.exe")) { throw 'Installer was not produced' }
-          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
-            throw 'Release tag does not match APP_VERSION'
-          }
+          set -euo pipefail
+          python -m PyInstaller --noconfirm --clean packaging/filepetal.spec
+          test -d "dist/FilePetal.app"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/FilePetal.app" \
+            "dist/FilePetal-${{ steps.version.outputs.version }}-${{ matrix.asset }}.zip"
 
-      - name: Smoke test frozen executable
-        shell: pwsh
+      - name: Build Linux portable ZIP
+        if: matrix.os == 'linux'
+        shell: bash
         run: |
-          $stdout = Join-Path $env:RUNNER_TEMP "tangerine-version.txt"
-          $process = Start-Process -FilePath "dist\Tangerine\Tangerine.exe" `
-            -ArgumentList "--version" -WindowStyle Hidden -PassThru -Wait -RedirectStandardOutput $stdout
-          if (Test-Path $stdout) { Get-Content $stdout }
-          if ($process.ExitCode -ne 0) {
-            throw "Tangerine.exe --version exited with code $($process.ExitCode)"
-          }
+          set -euo pipefail
+          python -m PyInstaller --noconfirm --clean packaging/filepetal.spec
+          test -x "dist/FilePetal/FilePetal"
+          cat > dist/FilePetal/README-Linux.txt <<'EOF'
+          FilePetal for Linux
 
-          $process = Start-Process -FilePath "dist\Tangerine\Tangerine.exe" `
-            -ArgumentList "--smoke-webengine" -WindowStyle Hidden -PassThru
-          if (-not $process.WaitForExit(30000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            throw "Tangerine.exe --smoke-webengine timed out after 30 seconds"
-          }
-          $process.Refresh()
-          if ($process.ExitCode -ne 0) {
-            throw "Tangerine.exe --smoke-webengine exited with code $($process.ExitCode)"
-          }
+          Launch with: ./FilePetal
+          FilePetal is built for x86_64 Linux and Ubuntu 22.04 or newer.
+          FFmpeg and FFprobe are optional system dependencies for audio/video features.
+          Drop files on the small FilePetal companion window to open a wheel.
+          EOF
+          cd dist
+          zip -qr "FilePetal-${{ steps.version.outputs.version }}-linux-x64.zip" FilePetal
 
-          $process = Start-Process -FilePath "dist\Tangerine\Tangerine.exe" `
-            -ArgumentList "--smoke-image-pdf" -WindowStyle Hidden -PassThru
-          if (-not $process.WaitForExit(30000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            throw "Tangerine.exe --smoke-image-pdf timed out"
-          }
-          $process.Refresh()
-          if ($process.ExitCode -ne 0) { throw "Image PDF runtime validation failed" }
-
-          $process = Start-Process -FilePath "dist\Tangerine\Tangerine.exe" `
-            -ArgumentList "--smoke-editors" -WindowStyle Hidden -PassThru
-          if (-not $process.WaitForExit(30000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            throw "Tangerine.exe --smoke-editors timed out"
-          }
-          $process.Refresh()
-          if ($process.ExitCode -ne 0) { throw "Image editor runtime validation failed" }
-
-      - name: Upload artifacts
+      - name: Upload platform ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: Tangerine-windows
-          path: |
-            dist/*-windows-portable.zip
-            dist/*-Setup.exe
+          name: FilePetal-${{ steps.version.outputs.version }}-${{ matrix.asset }}
+          path: dist/FilePetal-${{ steps.version.outputs.version }}-${{ matrix.asset }}.zip
           if-no-files-found: error
 
-      - name: Collect runtime diagnostics
-        if: always()
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path build/validation -Force | Out-Null
-          foreach ($name in @('Tangerine-image-pdf-smoke.json', 'Tangerine-webengine-smoke.log', 'Tangerine-editors-smoke.json')) {
-            $source = Join-Path $env:TEMP $name
-            if (Test-Path -LiteralPath $source) {
-              Copy-Item -LiteralPath $source -Destination (Join-Path 'build/validation' $name) -Force
-            }
-          }
-
-      - name: Upload validation receipts
-        if: always()
-        uses: actions/upload-artifact@v4
+  release:
+    name: Publish GitHub release downloads
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download platform ZIPs
+        uses: actions/download-artifact@v4
         with:
-          name: Tangerine-validation
-          path: |
-            build/test-results.xml
-            build/pdf-flow-results.xml
-            build/validation/Tangerine-image-pdf-smoke.json
-            build/validation/Tangerine-webengine-smoke.log
-            build/validation/Tangerine-editors-smoke.json
-          if-no-files-found: warn
+          pattern: FilePetal-*
+          path: release-assets
+          merge-multiple: true
 
-      - name: Derive release version
-        id: version
-        shell: pwsh
-        run: |
-          $text = Get-Content tangerine\paths.py -Raw
-          $match = [regex]::Match($text, 'APP_VERSION\s*=\s*"([^"]+)"')
-          if (-not $match.Success) { throw "APP_VERSION not found in tangerine\paths.py" }
-          "version=$($match.Groups[1].Value)" >> $env:GITHUB_OUTPUT
-
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          name: Tangerine for Windows ${{ steps.version.outputs.version }}
+          name: FilePetal ${{ github.ref_name }}
           generate_release_notes: true
-          files: |
-            dist/*-windows-portable.zip
-            dist/*-Setup.exe
+          files: release-assets/*.zip

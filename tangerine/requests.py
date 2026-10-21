@@ -30,8 +30,10 @@ def parse_request(arguments: list[str]) -> dict | None:
     parser.add_argument("files", nargs="*")
     args = parser.parse_args(arguments)
     if not args.images_to_pdf:
-        if args.files or args.selection_manifest or args.pdf_quick:
+        if args.selection_manifest or args.pdf_quick:
             parser.error("Use --images-to-pdf with image files.")
+        if args.files:
+            return validate_request({"id": uuid.uuid4().hex, "action": "open-files", "paths": args.files})
         return None
     files = args.files
     if args.selection_manifest is not None:
@@ -51,24 +53,27 @@ def parse_request(arguments: list[str]) -> dict | None:
 
 
 def validate_request(request: object) -> dict:
-    if not isinstance(request, dict) or request.get("action") != "images-to-pdf":
-        raise ValueError("Unknown Tangerine action.")
+    if not isinstance(request, dict) or request.get("action") not in {"images-to-pdf", "open-files"}:
+        raise ValueError("Unknown FilePetal action.")
+    action = request["action"]
     files = request.get("paths")
     if not isinstance(files, list) or len(files) > 10000 or not all(isinstance(p, str) and p and "\0" not in p for p in files):
         raise ValueError("Invalid image selection.")
-    if request.get("order") not in ("name", "received", "manual") or not isinstance(request.get("quick"), bool):
-        raise ValueError("Invalid PDF options.")
     identifier = request.get("id")
     if not isinstance(identifier, str) or len(identifier) != 32 or any(c not in "0123456789abcdef" for c in identifier):
         raise ValueError("Invalid request ID.")
-    return {"id": identifier, "action": "images-to-pdf", "paths": files,
+    if action == "open-files":
+        return {"id": identifier, "action": action, "paths": files}
+    if request.get("order") not in ("name", "received", "manual") or not isinstance(request.get("quick"), bool):
+        raise ValueError("Invalid PDF options.")
+    return {"id": identifier, "action": action, "paths": files,
             "order": request["order"], "quick": request["quick"]}
 
 
 def forward_request(request: dict, timeout_ms: int = 1500) -> bool:
     payload = json.dumps(validate_request(request), ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
     if len(payload) > MAX_REQUEST_BYTES:
-        raise ValueError("Image selection is too large.")
+        raise ValueError("File selection is too large.")
     socket = QLocalSocket()
     socket.connectToServer(server_name())
     if not socket.waitForConnected(timeout_ms):

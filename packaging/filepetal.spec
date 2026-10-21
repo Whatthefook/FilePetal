@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for FilePetal for Windows (onedir, windowed, no UPX).
+"""PyInstaller spec for FilePetal (onedir, windowed, no UPX).
 
 Build from the repository root:
 
@@ -8,6 +8,7 @@ Build from the repository root:
 
 import os
 import re
+import sys
 
 from PyInstaller.utils.hooks import collect_all
 
@@ -19,7 +20,9 @@ except NameError:  # pragma: no cover
 REPO_ROOT = os.path.dirname(SPEC_DIR)
 MAIN_PY = os.path.join(REPO_ROOT, "main.py")
 ASSETS_DIR = os.path.join(REPO_ROOT, "assets")
-ICON_FILE = os.path.join(ASSETS_DIR, "icon.ico")
+IS_WINDOWS = sys.platform == "win32"
+IS_MACOS = sys.platform == "darwin"
+ICON_FILE = os.path.join(ASSETS_DIR, "icon.ico") if IS_WINDOWS else os.path.join(ASSETS_DIR, "icon.icns")
 
 
 def _read_app_version(repo_root):
@@ -51,7 +54,6 @@ print(f"[filepetal.spec] FilePetal {APP_VERSION} -> {VERSION_INFO_FILE}")
 
 
 datas = [
-    (os.path.join(REPO_ROOT, "build", "shell", "TangerineShell.dll"), "shell"),
     (os.path.join(ASSETS_DIR, "icon.ico"), "assets"),
     (os.path.join(ASSETS_DIR, "icon.png"), "assets"),
     (os.path.join(ASSETS_DIR, "tray.ico"), "assets"),
@@ -65,9 +67,11 @@ hiddenimports = [
     "PySide6.QtMultimedia",
     "PySide6.QtMultimediaWidgets",
     "PySide6.QtSvg",
-    "comtypes",
-    "comtypes.client",
 ]
+
+if IS_WINDOWS:
+    datas.append((os.path.join(REPO_ROOT, "build", "shell", "TangerineShell.dll"), "shell"))
+    hiddenimports.extend(["comtypes", "comtypes.client"])
 
 for _package in ("rapidocr_onnxruntime", "onnxruntime"):
     try:
@@ -123,12 +127,12 @@ exe = EXE(
     upx=False,
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=False,
+    argv_emulation=IS_MACOS,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=ICON_FILE,
-    version=VERSION_INFO_FILE,
+    icon=ICON_FILE if os.path.isfile(ICON_FILE) else None,
+    version=VERSION_INFO_FILE if IS_WINDOWS else None,
 )
 
 coll = COLLECT(
@@ -140,3 +144,16 @@ coll = COLLECT(
     upx_exclude=[],
     name="FilePetal",
 )
+
+if IS_MACOS:
+    app = BUNDLE(
+        coll,
+        name="FilePetal.app",
+        icon=ICON_FILE if os.path.isfile(ICON_FILE) else None,
+        bundle_identifier="org.filepetal.app",
+        info_plist={
+            "CFBundleShortVersionString": APP_VERSION,
+            "CFBundleVersion": APP_VERSION,
+            "LSMinimumSystemVersion": "13.0",
+        },
+    )

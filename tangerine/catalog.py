@@ -1,6 +1,8 @@
 """Format families, conversion targets and file tools - mirrors the macOS spec."""
 
 import importlib.util
+import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -535,4 +537,16 @@ def actions_for(paths_: list[Path]) -> list[ActionItem]:
     """Actions offered for the given selection."""
     if not paths_:
         return []
-    return list(ACTIONS)
+    items = list(ACTIONS)
+    if sys.platform != "win32":
+        # Native share sheets are platform-specific; don't show the Windows
+        # Explorer action where FilePetal cannot invoke it.
+        items = [item for item in items if item.id != "act.share"]
+    if sys.platform == "darwin":
+        if not shutil.which("osascript"):
+            items = [item for item in items if item.id != "act.terminal"]
+    elif sys.platform.startswith("linux"):
+        terminals = ("x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal", "kitty", "alacritty")
+        if not any(shutil.which(name) for name in terminals):
+            items = [item for item in items if item.id != "act.terminal"]
+    return items

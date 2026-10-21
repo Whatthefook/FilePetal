@@ -1,87 +1,55 @@
-# FilePetal Release & Packaging Guide
+# Release and Packaging Guide
 
-This guide details how to build, test, and package FilePetal for Windows releases.
+FilePetal packages are built on native GitHub Actions runners. PyInstaller builds a separate package on each operating system, and the macOS app is built once per CPU architecture.
 
----
+## Supported package targets
 
-## 1. Prerequisites
+| ZIP asset | Build runner | Runtime target |
+| --- | --- | --- |
+| `FilePetal-<version>-windows-x64.zip` | Windows x64 | Windows 10 1809+ and Windows 11 |
+| `FilePetal-<version>-macos-arm64.zip` | macOS 15 Apple silicon | macOS 13+, Apple silicon |
+| `FilePetal-<version>-macos-x64.zip` | macOS 15 Intel | macOS 13+, Intel |
+| `FilePetal-<version>-linux-x64.zip` | Ubuntu 22.04 x64 | x86_64 Linux with glibc 2.34+; Ubuntu 22.04+ is the supported baseline |
 
-- **Operating System:** Windows 10 (1809+) or Windows 11 (x64)
-- **Python:** Python 3.11, 3.12, or 3.14 (Python 3.12 recommended)
-- **Visual Studio Build Tools:** C++ CMake tools and MSVC x64 compiler (or MinGW g++)
-- **Inno Setup 6:** Required to build `FilePetal-Setup.exe`
-  ```powershell
-  winget install --id JRSoftware.InnoSetup -e
-  ```
-- **FFmpeg Full Build:** Required in `tools\` for audio/video bundling
-  ```powershell
-  winget install --id Gyan.FFmpeg -e
-  ```
+The app bundles its Python and Qt dependencies, plus RapidOCR for offline scanned-PDF OCR. FFmpeg/FFprobe and RAR utilities are not included in release ZIPs and must be installed separately for those optional features. The Windows package retains the existing native Explorer shell bridge; macOS and Linux use the companion drop window.
 
----
+## Build from source
 
-## 2. Setting Up the Development Environment
+Build on the target OS, using Python 3.12. Install base and OCR dependencies:
 
-1. Clone or extract the repository:
-   ```powershell
-   git clone <repo-url> filepetal
-   cd filepetal
-   ```
-
-2. Create virtual environment and install dependencies:
-   ```powershell
-   uv venv --python 3.12
-   .venv\Scripts\activate
-   uv pip install -r requirements.txt -r requirements-dev.txt
-   ```
-
-3. Copy FFmpeg and FFprobe binaries to `tools\`:
-   ```powershell
-   New-Item -ItemType Directory -Path tools -Force
-   $wingetDir = (Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter "ffmpeg.exe").DirectoryName
-   Copy-Item (Join-Path $wingetDir "ffmpeg.exe") "tools\ffmpeg.exe"
-   Copy-Item (Join-Path $wingetDir "ffprobe.exe") "tools\ffprobe.exe"
-   ```
-
----
-
-## 3. Running Verification & Test Suite
-
-Run the full pytest suite before building packages:
-```powershell
-.venv\Scripts\python.exe -m pytest
-```
-Expected: All 272+ tests pass with 0 failures.
-
----
-
-## 4. Building the Production Release
-
-FilePetal features an automated, one-shot packaging pipeline (`packaging\build.ps1`) that:
-1. Compiles the native Explorer C++ shell bridge (`build\shell\TangerineShell.dll`).
-2. Runs native selection contract tests (`ValidateShell.exe`).
-3. Freezes the application with PyInstaller into `dist\FilePetal\`.
-4. Bundles `tools\` (`ffmpeg.exe`, `ffprobe.exe`) and `assets\`.
-5. Executes headless smoke tests:
-   - Qt WebEngine render check (`--smoke-webengine`)
-   - Image-to-PDF ordering and engine IPC check (`--smoke-image-pdf`)
-   - Image editors & batch controls check (`--smoke-editors`)
-6. Generates portable archive `dist\FilePetal-<version>-windows-portable.zip`.
-7. Compiles Inno Setup per-user installer `dist\FilePetal-Setup.exe`.
-
-### Command:
-```powershell
-powershell -ExecutionPolicy Bypass -File packaging\build.ps1 -Python .venv\Scripts\python.exe
+```sh
+python -m venv .venv
+python -m pip install -r requirements.txt -r requirements-ocr.txt
+python -m pip install pyinstaller pyinstaller-hooks-contrib
 ```
 
----
+On macOS, create `assets/icon.icns` from the project PNG icon before building. The release workflow does this with `sips` and `iconutil`. Then build the platform bundle:
 
-## 5. Artifact Verification Checklist
+```sh
+python -m PyInstaller --noconfirm --clean packaging/filepetal.spec
+```
 
-After building, inspect the contents of `dist\`:
-- [ ] `dist\FilePetal\FilePetal.exe` launches correctly.
-- [ ] `dist\FilePetal\tools\ffmpeg.exe` and `ffprobe.exe` exist.
-- [ ] `dist\FilePetal\shell\TangerineShell.dll` exists.
-- [ ] `dist\FilePetal-Setup.exe` installs cleanly without requiring administrative privileges.
-- [ ] `dist\FilePetal-1.11.0-windows-portable.zip` contains all runtime dependencies.
-- [ ] Settings window (`Settings > About`) indicates all required engines are available.
+The macOS output is `dist/FilePetal.app`; Linux output is `dist/FilePetal/`. ZIP the macOS app with `ditto` to preserve bundle metadata. Zip the Linux folder after building.
+
+On Windows, use the packaging script to build the native Explorer bridge, frozen app, smoke receipts, and portable ZIP:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packaging\build.ps1 -Python .venv\Scripts\python.exe -SkipInstaller
+```
+
+Omit `-SkipInstaller` to create the optional per-user Inno Setup installer when Inno Setup 6 is installed.
+
+## Publish a GitHub release
+
+1. Set `APP_VERSION` in `tangerine/paths.py` and commit all release source changes to `main`.
+2. Push an annotated version tag that matches it, such as `v1.11.0` for `APP_VERSION = "1.11.0"`.
+3. The **Build FilePetal downloads** workflow builds four ZIPs (Windows, Linux, macOS Apple silicon, macOS Intel), then attaches them to a GitHub Release for that tag.
+4. Check each ZIP is present on the release before linking it from the project website.
+
+The source repository is MIT licensed. Keep third-party notices and the applicable component licenses with the distribution; see [third-party notices](third-party-notices.md).
+
+## Platform notes
+
+- macOS ZIPs are currently unsigned and not notarized. Users may need to approve the first launch in Finder.
+- Linux's portable ZIP still relies on a compatible host desktop and system Qt/X11 or Wayland libraries. Ubuntu 22.04 x64 is the minimum supported baseline.
+- These packages do not bundle FFmpeg or RAR binaries. That keeps external codec licensing and source distribution explicit; users can install the required engine locally.

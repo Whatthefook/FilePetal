@@ -1,4 +1,4 @@
-# FilePetal for Windows - Python dependencies
+# FilePetal - Python dependencies
 #
 # Install with:
 #     pip install -r requirements.txt
@@ -29,19 +29,17 @@ opencv-python-headless<5
 reportlab
 # Test-only helper for generating QR fixtures
 segno
-# Explorer selection for the Shift+Enter keyboard trigger (Shell.Application COM)
-comtypes>=1.4
+# Explorer selection and shell integration are Windows-only.
+comtypes>=1.4; sys_platform == "win32"
 
 # ---------------------------------------------------------------------------
 # External tools (installed separately, not through pip)
 #
 # - FFmpeg + ffprobe (required for audio/video/GIF and media metadata).
-#   Detected automatically in the app's own tools\ folder, winget installs
-#   (Gyan.FFmpeg full build recommended), C:\ffmpeg\bin, and PATH.
-# - WinRAR (optional, .rar only): Rar.exe / UnRAR.exe in C:\Program Files\WinRAR.
-#   Without it, zip/tar/gz still work.
+#   Install separately, add to PATH, or place in the app's tools/ folder.
+# - WinRAR/UnRAR (optional, .rar only) is detected on Windows. Without it,
+#   ZIP/TAR/GZ support remains available.
 #
 # Notes
 # - Tested on Python 3.14 (3.11+ recommended).
-# - On Windows, run as a tray app with `pythonw main.py`
-#   (use `python main.py` to see the console while debugging).
+# - Windows has Explorer integration; macOS/Linux use the companion drop window.

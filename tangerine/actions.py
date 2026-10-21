@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -317,6 +318,7 @@ def run_copy_paths(file_paths, parent=None):
 
 
 def run_terminal(file_paths, parent=None):
+    import shlex
     import shutil
     import subprocess
     paths = [Path(p).resolve() for p in file_paths]
@@ -324,6 +326,26 @@ def run_terminal(file_paths, parent=None):
         return None
     target_dir = paths[0].parent if paths[0].is_file() else paths[0]
     folder_str = str(target_dir)
+    if sys.platform == "darwin":
+        command = f"cd {shlex.quote(folder_str)}"
+        escaped = command.replace("\\", "\\\\").replace('"', '\\"')
+        subprocess.Popen(["osascript", "-e", f'tell application "Terminal" to do script "{escaped}"'])
+        return None
+    if sys.platform.startswith("linux"):
+        candidates = (
+            ("x-terminal-emulator", "--working-directory", folder_str),
+            ("gnome-terminal", f"--working-directory={folder_str}"),
+            ("konsole", "--workdir", folder_str),
+            ("xfce4-terminal", f"--working-directory={folder_str}"),
+            ("kitty", "--directory", folder_str),
+            ("alacritty", "--working-directory", folder_str),
+        )
+        for name, *arguments in candidates:
+            executable = shutil.which(name)
+            if executable:
+                subprocess.Popen([executable, *arguments])
+                return None
+        raise RuntimeError("No supported terminal emulator was found.")
     wt = shutil.which("wt") or shutil.which("wt.exe")
     if wt:
         subprocess.Popen([wt, "-d", folder_str])
@@ -355,7 +377,12 @@ def run_action(file_paths, key, parent=None, label=None, anchor=None):
         show_toast(i18n.tr("action.paths_copied"), anchor=anchor)
         return None
     if key == "act.terminal":
-        run_terminal(file_paths, parent)
+        try:
+            run_terminal(file_paths, parent)
+        except Exception as exc:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(parent, i18n.tr("app.name"), str(exc))
+            return None
         from .toast import show_toast
         paths = [Path(p).resolve() for p in file_paths]
         folder_name = paths[0].parent.name if paths[0].is_file() else paths[0].name

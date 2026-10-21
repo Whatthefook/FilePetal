@@ -13,7 +13,8 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from . import actions, catalog, i18n, paths, render, settings, theme
-from .monitor import DragMonitor
+if sys.platform == "win32":
+    from .monitor import DragMonitor
 from .wheel import FanItem, TangerineWheel
 
 log = logging.getLogger("tangerine")
@@ -31,7 +32,14 @@ def _show_error(message: str) -> None:
     if os.environ.get("QT_QPA_PLATFORM") == "offscreen":
         return
     try:
-        ctypes.windll.user32.MessageBoxW(None, message, "FilePetal", 0x10)
+        if sys.platform == "win32":
+            ctypes.windll.user32.MessageBoxW(None, message, "FilePetal", 0x10)
+        else:
+            from PySide6.QtWidgets import QApplication, QMessageBox
+            if QApplication.instance() is not None:
+                QMessageBox.critical(None, paths.APP_NAME, message)
+            else:
+                print(message, file=sys.stderr)
     except Exception:
         pass
 
@@ -89,7 +97,13 @@ class Controller(QObject):
         self.wheel.set_factory(self._factory)
         self.wheel.activated.connect(self._activated)
 
-        self.monitor = DragMonitor(self)
+        self._portable = sys.platform != "win32"
+        if self._portable:
+            from .portable import PortableMonitor
+            self.monitor = PortableMonitor(self)
+            self.monitor.start()
+        else:
+            self.monitor = DragMonitor(self)
         self.monitor.wheelShown.connect(self._show_wheel)
         self.monitor.wheelMoved.connect(self._move_wheel)
         self.monitor.wheelHidden.connect(self._hide_wheel)
@@ -102,18 +116,24 @@ class Controller(QObject):
         self.wheel.closed.connect(self.monitor.sticky_release)
 
         self.tray = QSystemTrayIcon(QIcon(str(paths.icon_path())), self)
+        self.tray_available = QSystemTrayIcon.isSystemTrayAvailable()
         self.tray.setToolTip(i18n.tr("tray.tooltip"))
         self._menu = None
         self._active_menu = None
         self._build_tray_menu()
         self.tray.activated.connect(self._tray_activated)
-        self.tray.show()
+        if self.tray_available:
+            self.tray.show()
 
         i18n.add_listener(self._language_changed)
 
     # -- localization ----------------------------------------------------------
     def _build_tray_menu(self):
         menu = QMenu()
+        if self._portable:
+            companion_action = menu.addAction(i18n.tr("portable.open"))
+            companion_action.triggered.connect(self._show_companion)
+            menu.addSeparator()
         pdf_action = menu.addAction(i18n.tr("pdf.images.title"))
         pdf_action.triggered.connect(lambda: self.open_images_pdf())
         menu.addSeparator()
@@ -132,8 +152,11 @@ class Controller(QObject):
 
     def _language_changed(self, code=None):
         try:
-            self.tray.setToolTip(i18n.tr("tray.tooltip"))
+            if self.tray_available:
+                self.tray.setToolTip(i18n.tr("tray.tooltip"))
             self._build_tray_menu()
+            if self._portable:
+                self.monitor.retranslate()
             files = self.wheel.file_paths()
             if files:
                 self._refresh_wheel(self._mode)
@@ -303,7 +326,15 @@ class Controller(QObject):
     # -- tray ------------------------------------------------------------------
     def _tray_activated(self, reason):
         if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick):
-            self.open_settings()
+            if self._portable:
+                self._show_companion()
+            else:
+                self.open_settings()
+
+    def _show_companion(self):
+        if self._portable:
+            self.monitor.start()
+            self.monitor.surface.activateWindow()
 
     def open_settings(self):
         if self._settings_window is not None and self._settings_window.isVisible():
@@ -315,12 +346,7 @@ class Controller(QObject):
 
             self._settings_window = settings_window.open_settings(pdf_callback=self.open_images_pdf)
         except ImportError:
-            self.tray.showMessage(
-                i18n.tr("app.name"),
-                i18n.tr("tray.settings_unavailable"),
-                QSystemTrayIcon.MessageIcon.Warning,
-                4000,
-            )
+            QMessageBox.warning(None, i18n.tr("app.name"), i18n.tr("tray.settings_unavailable"))
             self._settings_window = None
         return self._settings_window
 
@@ -336,6 +362,14 @@ class Controller(QObject):
             return None
 
     def handle_request(self, request):
+        if request["action"] == "open-files":
+            files = [str(Path(p).expanduser().resolve()) for p in request["paths"] if Path(p).expanduser().exists()]
+            if self._portable:
+                self.monitor.open_files(files)
+            elif files:
+                from PySide6.QtGui import QCursor
+                self._show_wheel(QCursor.pos(), files, "conversion")
+            return
         from .image_pdf import PdfOptions, is_pdf_image
         from . import engines, progress
         from PySide6.QtGui import QCursor
@@ -379,17 +413,21 @@ class Controller(QObject):
         self.app.quit()
 
     def notify_welcome(self):
-        self.tray.showMessage(
-            i18n.tr("app.name"),
-            i18n.tr("tray.welcome"),
-            QSystemTrayIcon.MessageIcon.Information,
-            9000,
-        )
+        if self.tray_available:
+            self.tray.showMessage(
+                i18n.tr("app.name"),
+                i18n.tr("tray.welcome"),
+                QSystemTrayIcon.MessageIcon.Information,
+                9000,
+            )
         settings.set("welcomeShown", True)
         settings.save()
 
 
 def _already_running(app):
+    if not QSystemTrayIcon.isSystemTrayAvailable():
+        QMessageBox.information(None, paths.APP_NAME, i18n.tr("tray.already_running"))
+        return 1
     tray = QSystemTrayIcon(QIcon(str(paths.icon_path())))
     tray.show()
     tray.showMessage(
@@ -411,15 +449,11 @@ def _run():
     app.setApplicationVersion(paths.APP_VERSION)
     app.setOrganizationName(paths.APP_NAME)
     app.setWindowIcon(QIcon(str(paths.icon_path())))
-    app.setQuitOnLastWindowClosed(False)
+    app.setQuitOnLastWindowClosed(not QSystemTrayIcon.isSystemTrayAvailable())
     theme.apply_app_theme()
 
     if request is not None and forward_request(request, 300):
         return 0
-
-    if not QSystemTrayIcon.isSystemTrayAvailable():
-        log.error("No system tray available")
-        return 1
 
     lock = QLockFile(str(paths.data_dir() / "filepetal.lock"))
     if not lock.tryLock(0):
@@ -443,7 +477,7 @@ def _run():
     server.received.connect(controller.handle_request)
     if request is not None:
         QTimer.singleShot(0, lambda: controller.handle_request(request))
-    if getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False) and sys.platform == "win32":
         def register():
             try:
                 from .shell_integration import register_shell

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.11.0 — 2026-10-21
+
+- Añade paquetes ZIP para Windows x64, Linux x64 y macOS Intel/Apple silicon.
+- Añade una ventana pequeña y translúcida para soltar archivos en macOS y Linux;
+  desde ella se abren las ruedas existentes de conversión, herramientas y acciones.
+- Permite iniciar FilePetal con rutas de archivo para abrirlas en la rueda.
+- Adapta la carpeta de datos, los iconos, los ajustes y la apertura de carpetas a
+  macOS/Linux. La integración de Explorer y su acción Compartir siguen siendo
+  específicas de Windows.
+- FFmpeg/FFprobe y las utilidades RAR siguen siendo dependencias externas; las
+  notas de descarga y compatibilidad describen esas limitaciones.
+
 ## 1.10.2 — 2026-10-09
 
 - Corrige un estado residual de los nuevos controles numéricos: las flechas

@@ -282,6 +282,9 @@
       if (dropTarget) dropTarget.classList.remove("is-drop-target");
       dropTarget = null;
       wheel.hidden = true;
+      // Tear down the composited backdrop-filter/shadow layer as well as hiding it.
+      // Chromium can otherwise leave a dark after-image where this transformed wheel was painted.
+      if (wheel.isConnected) wheel.remove();
       liveMode = null;
       wheelPinned = false;
       wheelPositioned = false;
@@ -348,6 +351,7 @@
         }
         renderedWheelKey = renderKey;
       }
+      if (!wheel.isConnected) stage.insertBefore(wheel, toast || null);
       wheel.hidden = false;
       stage.classList.add("wheel-open");
       if (!wheelPositioned && Number.isFinite(clientX) && Number.isFinite(clientY)) {

@@ -87,7 +87,7 @@
         if (button) button.href = asset.browser_download_url;
         if (filename) filename.textContent = asset.name;
         if (count) {
-          count.textContent = Number.isFinite(asset.download_count) ? asset.download_count.toLocaleString() + " downloads" : "Download count unavailable";
+          count.textContent = Number.isFinite(asset.download_count) ? asset.download_count.toLocaleString() + (asset.download_count === 1 ? " download" : " downloads") : "Download count unavailable";
           count.classList.toggle("count-unavailable", !Number.isFinite(asset.download_count));
         }
       });
@@ -148,15 +148,17 @@
     let armed = null;
     let dragging = null;
     let dragOrigin = null;
+    let activePointerId = null;
     let liveMode = null;
-    let lastPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    const startPositions = new Map();
+    let wheelPinned = false;
+    let lastPointer = { x: 0, y: 0 };
 
     function say(message, detail) {
       if (toast) toast.textContent = message;
       if (feedback && detail) feedback.textContent = detail;
     }
     function setSelected(file, isArmed) {
+      if (armed && armed !== file) armed.classList.remove("is-armed");
       selected = file;
       files.forEach(function (el) {
         const active = el === file;
@@ -166,7 +168,7 @@
       if (isArmed) {
         armed = file;
         file.classList.add("is-armed");
-        say(file.dataset.name + " picked up. Drag it, then hold a shortcut.", "Picked up " + file.dataset.name + ". Drag inside the desktop and hold Shift, Alt + Shift, or Ctrl + Shift.");
+        say(file.dataset.name + " picked up. Drag it while holding a shortcut.", "Picked up " + file.dataset.name + ". Drag inside the desktop and hold Shift, Alt + Shift, or Ctrl + Shift.");
       }
     }
     function modeFromKeys(event) {
@@ -178,16 +180,19 @@
     function formatOutputName(name, extension) {
       return name.replace(/\.[^.]+$/, "") + "." + extension.toLowerCase();
     }
-    function moveWheel(clientX, clientY) {
+    function placeWheel(clientX, clientY) {
       const bounds = stage.getBoundingClientRect();
-      const size = wheel.offsetWidth || Math.min(310, bounds.width - 20);
-      const x = Math.max(size / 2 + 8, Math.min(bounds.width - size / 2 - 8, clientX - bounds.left));
+      const size = wheel.offsetWidth || 300;
+      const half = size / 2;
+      const x = Math.max(half + 8, Math.min(bounds.width - half - 8, clientX - bounds.left));
       const header = document.querySelector(".site-header");
-      const topEdge = Math.max(size / 2 + 8, (header ? header.getBoundingClientRect().bottom : 0) + size / 2 + 8 - bounds.top);
-      const bottomEdge = Math.min(bounds.height - size / 2 - 8, window.innerHeight - size / 2 - 8 - bounds.top);
-      const minY = Math.min(topEdge, bottomEdge);
-      const maxY = Math.max(topEdge, bottomEdge);
-      const y = Math.max(minY, Math.min(maxY, clientY - bounds.top));
+      const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+      const minY = Math.max(half + 4, headerBottom + half + 4 - bounds.top);
+      const maxY = Math.min(bounds.height - half - 4, window.innerHeight - half - 4 - bounds.top);
+      const pointerY = clientY - bounds.top;
+      const y = minY <= maxY
+        ? Math.max(minY, Math.min(maxY, pointerY))
+        : Math.max(half + 4, Math.min(bounds.height - half - 4, pointerY));
       wheel.style.setProperty("--wheel-x", x + "px");
       wheel.style.setProperty("--wheel-y", y + "px");
     }
@@ -195,16 +200,19 @@
       if (!wheel) return;
       wheel.hidden = true;
       liveMode = null;
+      wheelPinned = false;
       stage.classList.remove("wheel-open");
       previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", "false"); });
     }
-    function showWheel(mode, file, clientX, clientY) {
+    function showWheel(mode, file, clientX, clientY, pin) {
       const sample = SAMPLE_FILES[file.dataset.file];
       if (!sample || !wheel || !petals) return;
       liveMode = mode;
+      if (pin) wheelPinned = true;
       const config = MODES[mode];
       const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
-      const diameter = window.matchMedia("(max-width: 680px)").matches ? Math.min(290, window.innerWidth - 44) : Math.min(310, stage.clientWidth - 20);
+      const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(240, stage.clientWidth - 20));
+      wheel.style.width = diameter + "px";
       const radius = Math.max(76, diameter / 2 - 48);
       petals.replaceChildren();
       if (modeName) modeName.textContent = config.label;
@@ -213,7 +221,6 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "wheel-petal";
-        button.style.setProperty("--petal-index", index);
         const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
         button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
         button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
@@ -234,105 +241,126 @@
       if (!choices.length) {
         const empty = document.createElement("p");
         empty.className = "wheel-empty";
-        empty.textContent = "No dedicated tool for Markdown files";
+        empty.textContent = "No dedicated tools for this file type";
         petals.appendChild(empty);
       }
       wheel.hidden = false;
       stage.classList.add("wheel-open");
-      if (Number.isFinite(clientX) && Number.isFinite(clientY)) moveWheel(clientX, clientY);
-      const control = previewButtons.find(function (button) { return button.dataset.mode === mode; });
-      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", String(button === control)); });
-      if (mode === "convert") say(config.shortcut + " · " + sample.name, "Convert preview for " + sample.name + ". Hold the shortcut while dragging; select a format to preview its output name.");
-      else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Tools available for " + sample.name + ". Select a tool to see what would open." : "This file type has no dedicated tool in the current app; its conversion wheel still works.");
-      else say(config.shortcut + " · " + sample.name, "The app’s file actions apply to this selected sample. This page previews labels only.");
+      if (Number.isFinite(clientX) && Number.isFinite(clientY)) placeWheel(clientX, clientY);
+      const activeButton = previewButtons.find(function (button) { return button.dataset.mode === mode; });
+      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", String(button === activeButton)); });
+      if (mode === "convert") say(config.shortcut + " · " + sample.name, "Choose a format to preview the output filename. The demo does not create a file.");
+      else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Choose a tool to preview what would open. The demo does not edit the sample." : "This file type has no dedicated tool here; its conversion wheel still works.");
+      else say(config.shortcut + " · " + sample.name, "Choose an action to preview what the desktop app would do.");
     }
-
+    function startDrag(file, event) {
+      dragging = file;
+      activePointerId = event.pointerId;
+      const stageRect = stage.getBoundingClientRect();
+      const fileRect = file.getBoundingClientRect();
+      dragOrigin = { x: event.clientX, y: event.clientY, left: fileRect.left - stageRect.left, top: fileRect.top - stageRect.top };
+      lastPointer = { x: event.clientX, y: event.clientY };
+      file.classList.add("is-dragging");
+      try { file.setPointerCapture(event.pointerId); } catch (_) {}
+      event.preventDefault();
+      const mode = modeFromKeys(event);
+      if (mode) showWheel(mode, file, event.clientX, event.clientY, false);
+      else say("Dragging " + file.dataset.name, "Hold Shift for Convert, Alt + Shift for Tools, or Ctrl + Shift for Actions.");
+    }
+    function moveFile(event) {
+      if (!dragging || !dragOrigin || event.pointerId !== activePointerId) return;
+      lastPointer = { x: event.clientX, y: event.clientY };
+      const dx = event.clientX - dragOrigin.x;
+      const dy = event.clientY - dragOrigin.y;
+      if (Math.hypot(dx, dy) > 3) dragging.classList.add("has-moved");
+      const bounds = stage.getBoundingClientRect();
+      const fileRect = dragging.getBoundingClientRect();
+      dragging.style.left = Math.max(4, Math.min(stage.clientWidth - fileRect.width - 4, dragOrigin.left + dx)) + "px";
+      dragging.style.top = Math.max(4, Math.min(stage.clientHeight - fileRect.height - 4, dragOrigin.top + dy)) + "px";
+      const mode = modeFromKeys(event);
+      if (mode) showWheel(mode, dragging, event.clientX, event.clientY, false);
+      else if (!wheelPinned && liveMode) closeWheel();
+      const pointerOutside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+      if (pointerOutside && !wheelPinned) closeWheel();
+    }
+    function endDrag(event) {
+      if (!dragging || event.pointerId !== activePointerId) return;
+      const file = dragging;
+      const didMove = file.classList.contains("has-moved");
+      const modeAtDrop = liveMode;
+      file.classList.remove("is-dragging", "has-moved");
+      dragging = null;
+      dragOrigin = null;
+      activePointerId = null;
+      if (didMove) {
+        setSelected(file, true);
+        if (modeAtDrop) {
+          wheelPinned = true;
+          say(MODES[modeAtDrop].label + " wheel ready", "The wheel stays open after you release the mouse. Click a petal to preview it.");
+        } else {
+          say("File placed on the desktop.", "The sample moved. Drag it again while holding a shortcut to open a wheel.");
+        }
+      } else if (armed === file) {
+        say(file.dataset.name + " ready to drag", "Drag the selected sample while holding a shortcut. You can also use the three wheel buttons below.");
+      }
+    }
     function reset() {
       closeWheel();
       dragging = null;
       dragOrigin = null;
+      activePointerId = null;
       armed = null;
       selected = null;
       files.forEach(function (file) {
-        file.classList.remove("is-selected", "is-armed", "is-dragging");
+        file.classList.remove("is-selected", "is-armed", "is-dragging", "has-moved");
         file.removeAttribute("style");
         file.setAttribute("aria-pressed", "false");
       });
-      startPositions.clear();
       say("Double-click a sample icon to pick it up.", "This is a visual preview only. It does not read, upload, or change local files.");
     }
 
     files.forEach(function (file) {
       file.dataset.name = file.querySelector("span").textContent;
-      file.addEventListener("click", function () { if (!dragging) setSelected(file, false); });
+      file.addEventListener("pointerdown", function (event) {
+        if (event.button !== 0) return;
+        if (armed === file) {
+          startDrag(file, event);
+          return;
+        }
+        if (selected !== file && wheelPinned) closeWheel();
+        setSelected(file, false);
+        say(file.dataset.name + " selected", "Double-click to pick it up, then drag while holding a shortcut.");
+      });
+      file.addEventListener("click", function (event) { event.preventDefault(); });
       file.addEventListener("dblclick", function (event) {
         event.preventDefault();
-        file.classList.remove("is-armed");
         setSelected(file, true);
       });
-      file.addEventListener("pointerdown", function (event) {
-        if (event.button !== 0 || armed !== file) return;
-        dragging = file;
-        lastPointer = { x: event.clientX, y: event.clientY };
-        dragOrigin = { x: event.clientX, y: event.clientY, left: file.offsetLeft, top: file.offsetTop };
-        const stageRect = stage.getBoundingClientRect();
-        const fileRect = file.getBoundingClientRect();
-        startPositions.set(file, { left: fileRect.left - stageRect.left, top: fileRect.top - stageRect.top });
-        file.classList.add("is-dragging");
-        event.preventDefault();
-      });
-      function moveFile(event) {
-        if (dragging !== file || !dragOrigin) return;
-        lastPointer = { x: event.clientX, y: event.clientY };
-        const dx = event.clientX - dragOrigin.x;
-        const dy = event.clientY - dragOrigin.y;
-        if (Math.hypot(dx, dy) > 3) file.classList.add("has-moved");
-        const stageRect = stage.getBoundingClientRect();
-        const fileRect = file.getBoundingClientRect();
-        const width = stage.clientWidth;
-        const height = stage.clientHeight;
-        const origin = startPositions.get(file);
-        const nextLeft = Math.max(4, Math.min(width - fileRect.width - 4, origin.left + dx));
-        const nextTop = Math.max(4, Math.min(height - fileRect.height - 4, origin.top + dy));
-        file.style.left = nextLeft + "px";
-        file.style.top = nextTop + "px";
-        file.style.setProperty("--drag-x", "0px");
-        const mode = modeFromKeys(event);
-        if (mode) showWheel(mode, file, event.clientX, event.clientY);
-        else if (liveMode) closeWheel();
-      }
-      window.addEventListener("pointermove", moveFile);
-      function endDrag() {
-        if (dragging !== file) return;
-        file.classList.remove("is-dragging", "has-moved");
-        const modeAtDrop = liveMode;
-        dragging = null;
-        dragOrigin = null;
-        armed = null;
-        file.classList.remove("is-armed");
-        if (modeAtDrop) say("" + MODES[modeAtDrop].label + " wheel ready", "Select an option from the wheel to preview what the desktop app would do.");
-        else say("File placed on the desktop.", "Your sample icon moved. Hold a modifier shortcut during the drag to open a wheel.");
-      }
       file.addEventListener("dragstart", function (event) { event.preventDefault(); });
-      window.addEventListener("pointerup", endDrag);
-      window.addEventListener("pointercancel", endDrag);
     });
 
+    stage.addEventListener("pointermove", moveFile);
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
     window.addEventListener("keydown", function (event) {
       if (!dragging) return;
       const mode = modeFromKeys(event);
-      if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y);
+      if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y, false);
     });
     window.addEventListener("keyup", function (event) {
-      if (!liveMode) return;
-      if (!event.shiftKey || liveMode === "tools" && !event.altKey || liveMode === "actions" && !event.ctrlKey) closeWheel();
+      if (!liveMode || wheelPinned || !dragging) return;
+      if (!modeFromKeys(event)) closeWheel();
     });
+    window.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeWheel();
+    });
+
     previewButtons.forEach(function (button) {
       button.addEventListener("click", function () {
         const file = selected || files[0];
         setSelected(file, false);
         const rect = file.getBoundingClientRect();
-        showWheel(button.dataset.mode, file, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        showWheel(button.dataset.mode, file, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
       });
     });
     const resetButton = document.getElementById("demo-reset");
@@ -342,10 +370,10 @@
         closeWheel();
         files.forEach(function (file) { file.classList.remove("is-selected"); file.setAttribute("aria-pressed", "false"); });
         selected = null;
+        armed = null;
       }
     });
   }
-
   function init() {
     initTheme();
     initReleaseData();

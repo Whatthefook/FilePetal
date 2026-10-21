@@ -352,3 +352,77 @@ h1 { max-width: 740px; margin-bottom: 20px; font-size: clamp(42px, 6.2vw, 70px);
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Single-page layout: one continuous reading flow with one sticky download action. */
+.site-main { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
+.site-main > .home-hero, .site-main > .home-uses, .site-main > .home-details { width: 100%; }
+.header-inner { justify-content: space-between; }
+.header-download { padding: 10px 17px; border-color: var(--accent); color: #fff; background: var(--accent); }
+.header-download:hover { border-color: var(--accent-dark); color: #fff; background: var(--accent-dark); }
+.home-hero { min-height: 570px; grid-template-columns: minmax(0, 1fr) minmax(360px, .82fr); gap: clamp(40px, 7vw, 92px); padding: 74px 0 66px; }
+.home-hero .eyebrow { max-width: 500px; }
+.hero-product { padding: 12px; }
+.hero-product figcaption::after { content: "FILEPETAL"; }
+.hero-footnote { max-width: 520px; }
+.home-uses { border-top: 1px solid var(--line); }
+.home-details { padding: 50px 0 66px; }
+.page-section { padding: 74px 0 86px; border-top: 1px solid var(--line); scroll-margin-top: 86px; }
+.page-section-demo { padding-top: 60px; }
+.page-section-downloads { padding-bottom: 110px; }
+.section-heading { max-width: 800px; margin: 0 0 32px; }
+.section-heading .eyebrow { margin-bottom: 10px; }
+.section-heading h2 { max-width: 760px; margin-bottom: 14px; font-size: clamp(34px, 5vw, 56px); line-height: 1.04; letter-spacing: -.06em; }
+.section-heading > p:last-child { max-width: 700px; margin-bottom: 0; color: var(--muted); font-size: 16px; }
+.page-section .section-jump { margin-top: 0; }
+.page-section .product-shots { padding-top: 34px; }
+.page-section .guide-columns, .page-section .privacy-copy { max-width: 900px; }
+.page-section .faq-list { max-width: 900px; }
+.page-section .release-line { margin-top: 0; }
+.page-section .download-list { border-top-color: var(--line); }
+.page-section .download-row { padding-top: 24px; padding-bottom: 24px; }
+.page-section .download-howto { line-height: 1.55; }
+.page-section .update-note { max-width: 900px; }
+.page-section .external-link-row { margin-top: 28px; }
+.desktop-stage { min-height: clamp(430px, 45vw, 540px); }
+.desktop-file { z-index: 1; }
+.desktop-file.is-dragging { z-index: 4; }
+.gesture-wheel { z-index: 6; pointer-events: auto; }
+.gesture-wheel[hidden] { display: none; }
+.desktop-toast { z-index: 8; }
+.demo-controls { padding-top: 22px; }
+.shortcut-button { min-width: 112px; }
+.site-footer { width: min(1160px, calc(100% - 48px)); }
+#downloads, #demo, #features, #mac-guide, #privacy, #faq, #top { scroll-margin-top: 88px; }
+
+@media (max-width: 920px) {
+  .site-main { width: min(100% - 40px, 760px); }
+  .home-hero { min-height: auto; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); padding-top: 58px; }
+  .page-section { padding-top: 60px; padding-bottom: 66px; }
+  .page-section .download-row, .page-section .download-row-mac { grid-template-columns: minmax(165px, 1fr) minmax(180px, 1fr) auto; }
+  .page-section .download-row .download-howto { grid-column: 1 / -1; }
+}
+@media (max-width: 680px) {
+  .site-main, .header-inner, .site-footer { width: min(100% - 32px, 540px); }
+  .header-inner { min-height: 64px; padding: 0; }
+  .header-download { padding: 8px 12px; font-size: 12px; }
+  .home-hero { grid-template-columns: 1fr; gap: 26px; padding: 46px 0 38px; }
+  .home-hero .hero-product { width: min(100%, 440px); margin: 0 auto; }
+  .home-details { padding: 39px 0 48px; }
+  .home-details .text-link { margin-top: 2px; }
+  .page-section { padding: 48px 0 58px; }
+  .page-section-demo { padding-top: 44px; }
+  .section-heading { margin-bottom: 26px; }
+  .section-heading h2 { font-size: clamp(32px, 9vw, 45px); }
+  .section-heading > p:last-child { font-size: 14px; }
+  .desktop-stage { min-height: 440px; }
+  .page-section .download-row, .page-section .download-row-mac { grid-template-columns: 1fr auto; }
+}
+
+.tracking-note { max-width: 900px; margin-top: 34px; padding: 20px 22px; border-left: 3px solid var(--accent); background: var(--surface); }
+.tracking-note h2 { margin-bottom: 7px; font-size: 18px; }
+.tracking-note p { margin-bottom: 11px; color: var(--muted); font-size: 13px; }
+.tracking-note a { color: var(--accent-dark); font-size: 12px; font-weight: 700; text-underline-offset: 4px; }
+.use-row { grid-template-columns: 140px 1fr; }
+@media (max-width: 680px) {
+  .use-row { grid-template-columns: 82px 1fr; }
+}

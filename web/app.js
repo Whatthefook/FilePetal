@@ -240,7 +240,8 @@
       stage.querySelector(".desktop-files").appendChild(output);
       files.push(output);
       outputCopies += 1;
-      say("Created " + outputName, "Demo copy " + outputCopies + " added to the desktop. It is a visual mock only; no real file was converted or written.");
+      closeWheel();
+      say("Created " + outputName, "Demo copy " + outputCopies + " added to the desktop. The wheel closed; repeat the gesture to make another mock copy. No real file was converted or written.");
     }
     function setDropTarget(target) {
       const nextTarget = target && target.closest ? target.closest(".wheel-petal[data-mode='convert']") : null;
@@ -331,6 +332,7 @@
                 ? label + " would open in FilePetal. The demo does not edit the sample."
                 : label + " would run on the selected file in the desktop app. This demo does not perform the action.";
             say(label + " selected", message);
+            closeWheel();
           });
           petals.appendChild(button);
         });

@@ -14,7 +14,7 @@ FilePetal converts, edits, and organizes files locally. Operations create output
 - **macOS:** macOS 13 or later, Intel and Apple silicon. Each architecture has its own ZIP. Drop files on the FilePetal companion window to open the wheel.
 - **Linux:** x86_64 on Ubuntu 22.04 or newer (glibc 2.34 or newer), with the host's Qt/X11 or Wayland libraries and PulseAudio client library (`libpulse0`). Drop files on the companion window. Tray availability depends on the desktop environment.
 - **Downloads:** ZIP packages are published on [GitHub Releases](https://github.com/Whatthefook/FilePetal/releases/latest). The macOS release has separate Apple silicon and Intel downloads.
-- **Website:** a lightweight project website and download tracking are planned for a later phase. The application itself does not include download analytics.
+- **Website:** [whatthefook.github.io/FilePetal](https://whatthefook.github.io/FilePetal/) hosts the project download page. It reads release links and cumulative asset download counts from GitHub Releases; the application itself does not include download analytics.
 
 macOS and Linux cannot use the Windows Explorer drag monitor. Their companion window accepts local file drops and provides buttons for the same conversion, tools, and actions wheels. The native share action is currently Windows-only; the terminal action appears only when a supported terminal is available.
 

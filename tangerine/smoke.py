@@ -17,8 +17,18 @@ def _request_smoke(app, root, files):
     from . import paths, requests
     from .main import Controller
 
-    appdata = root / "appdata"
-    queue = appdata / paths.APP_NAME / "request-queue"
+    if sys.platform == "win32":
+        data_root = root / "appdata"
+        child_data_env = {"APPDATA": str(data_root)}
+    elif sys.platform == "darwin":
+        home = root / "home"
+        data_root = home / "Library" / "Application Support"
+        child_data_env = {"HOME": str(home)}
+    else:
+        data_root = root / "xdg-config"
+        child_data_env = {"XDG_CONFIG_HOME": str(data_root)}
+
+    queue = data_root / paths.APP_NAME / "request-queue"
     queue.mkdir(parents=True)
     original_data_dir = paths.data_dir
     paths.data_dir = lambda: queue.parent
@@ -49,7 +59,8 @@ def _request_smoke(app, root, files):
                 args += ["--selection-manifest", str(manifest)]
             else:
                 args += [str(selection[0])]
-            env = dict(os.environ, APPDATA=str(appdata), QT_QPA_PLATFORM="offscreen")
+            env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+            env.update(child_data_env)
             if not getattr(sys, "frozen", False):
                 # APPDATA isolation also changes Python's user-site location.
                 env["PYTHONPATH"] = os.pathsep.join(sys.path)

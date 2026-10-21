@@ -93,10 +93,16 @@ jobs:
       - name: Build macOS app bundle and ZIP
         if: matrix.os == 'macos'
         shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          TEMP: ${{ runner.temp }}
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           python -m PyInstaller --noconfirm --clean packaging/filepetal.spec
           test -d "dist/FilePetal.app"
+          "dist/FilePetal.app/Contents/MacOS/FilePetal" --smoke-image-pdf
+          python -c 'import json, os; from pathlib import Path; receipt=json.loads((Path(os.environ["TEMP"])/"Tangerine-image-pdf-smoke.json").read_text(encoding="utf-8")); assert receipt["ok"] and receipt["version"] == os.environ["EXPECTED_VERSION"] and receipt["ipc_requests"] == 2, receipt; print(json.dumps(receipt, indent=2))'
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/FilePetal.app" \
             "dist/FilePetal-${{ steps.version.outputs.version }}-${{ matrix.asset }}.zip"
@@ -104,10 +110,16 @@ jobs:
       - name: Build Linux portable ZIP
         if: matrix.os == 'linux'
         shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          TEMP: ${{ runner.temp }}
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           python -m PyInstaller --noconfirm --clean packaging/filepetal.spec
           test -x "dist/FilePetal/FilePetal"
+          "dist/FilePetal/FilePetal" --smoke-image-pdf
+          python -c 'import json, os; from pathlib import Path; receipt=json.loads((Path(os.environ["TEMP"])/"Tangerine-image-pdf-smoke.json").read_text(encoding="utf-8")); assert receipt["ok"] and receipt["version"] == os.environ["EXPECTED_VERSION"] and receipt["ipc_requests"] == 2, receipt; print(json.dumps(receipt, indent=2))'
           cat > dist/FilePetal/README-Linux.txt <<'EOF'
           FilePetal for Linux
 

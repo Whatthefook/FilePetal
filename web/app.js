@@ -1,455 +1,358 @@
-/**
- * FilePetal Website Client Script
- * Fetches latest public GitHub Release, updates download links & counts,
- * detects visitor operating system, handles theme switching and FAQ toggles.
- */
-
+/* FilePetal website interactions. The desktop demo uses mock files only. */
 (function () {
   "use strict";
 
-  // Known fallback release data (v1.11.1) if API is unavailable or rate-limited
   const FALLBACK_RELEASE = {
     tag_name: "v1.11.1",
     html_url: "https://github.com/Whatthefook/FilePetal/releases/tag/v1.11.1",
     assets: [
-      {
-        name: "FilePetal-1.11.1-windows-x64.zip",
-        browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-windows-x64.zip",
-        download_count: null
-      },
-      {
-        name: "FilePetal-1.11.1-macos-arm64.zip",
-        browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-macos-arm64.zip",
-        download_count: null
-      },
-      {
-        name: "FilePetal-1.11.1-macos-x64.zip",
-        browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-macos-x64.zip",
-        download_count: null
-      },
-      {
-        name: "FilePetal-1.11.1-linux-x64.zip",
-        browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-linux-x64.zip",
-        download_count: null
-      }
+      { name: "FilePetal-1.11.1-windows-x64.zip", browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-windows-x64.zip" },
+      { name: "FilePetal-1.11.1-macos-arm64.zip", browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-macos-arm64.zip" },
+      { name: "FilePetal-1.11.1-macos-x64.zip", browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-macos-x64.zip" },
+      { name: "FilePetal-1.11.1-linux-x64.zip", browser_download_url: "https://github.com/Whatthefook/FilePetal/releases/download/v1.11.1/FilePetal-1.11.1-linux-x64.zip" }
     ]
   };
-
   const API_URL = "https://api.github.com/repos/Whatthefook/FilePetal/releases/latest";
   const CACHE_KEY = "filepetal_release_cache_v1";
-  const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes TTL
+  const CACHE_TTL_MS = 15 * 60 * 1000;
 
-  // Asset matcher
-  function matchPlatformAsset(assets, platform) {
-    if (!Array.isArray(assets)) return null;
-
-    return assets.find(function (item) {
-      const name = (item.name || "").toLowerCase();
-      if (!name.endsWith(".zip")) return false;
-
-      switch (platform) {
-        case "windows-x64":
-          return name.includes("windows") && name.includes("x64");
-        case "macos-arm64":
-          return name.includes("macos") && (name.includes("arm64") || name.includes("aarch64"));
-        case "macos-x64":
-          return name.includes("macos") && (name.includes("x64") || name.includes("intel") || name.includes("x86_64"));
-        case "linux-x64":
-          return name.includes("linux") && name.includes("x64");
-        default:
-          return false;
-      }
-    });
-  }
-
-  // Update DOM with release data
-  function applyReleaseData(release, isLive) {
-    const tagName = release.tag_name || "v1.11.1";
-    const releaseUrl = release.html_url || "https://github.com/Whatthefook/FilePetal/releases/latest";
-
-    // Badges in header & hero
-    const navBadge = document.getElementById("nav-release-badge");
-    if (navBadge) navBadge.textContent = tagName;
-
-    const heroVersionTag = document.getElementById("hero-version-tag");
-    if (heroVersionTag) {
-      heroVersionTag.textContent = tagName;
-      heroVersionTag.href = releaseUrl;
-    }
-
-    // Status indicator
-    const indicatorDot = document.getElementById("api-indicator-dot");
-    const statusText = document.getElementById("api-status-text");
-
-    if (indicatorDot && statusText) {
-      if (isLive) {
-        indicatorDot.className = "status-indicator live";
-        statusText.textContent = "Latest Release " + tagName + " (live from GitHub)";
-      } else {
-        indicatorDot.className = "status-indicator fallback";
-        statusText.textContent = "Release " + tagName + " (verified offline fallback links)";
-      }
-    }
-
-    // Update 4 download targets
-    const targets = [
-      { key: "windows-x64", btnId: "btn-windows", nameId: "name-windows", countId: "count-windows" },
-      { key: "macos-arm64", btnId: "btn-macos-arm64", nameId: "name-macos-arm64", countId: "count-macos-arm64" },
-      { key: "macos-x64", btnId: "btn-macos-x64", nameId: "name-macos-x64", countId: "count-macos-x64" },
-      { key: "linux-x64", btnId: "btn-linux", nameId: "name-linux", countId: "count-linux" }
-    ];
-
-    targets.forEach(function (t) {
-      let asset = matchPlatformAsset(release.assets, t.key);
-
-      // If not found in live assets, fall back to known matching asset
-      if (!asset) {
-        asset = matchPlatformAsset(FALLBACK_RELEASE.assets, t.key);
-      }
-
-      if (!asset) return;
-
-      const btn = document.getElementById(t.btnId);
-      if (btn && asset.browser_download_url) {
-        btn.href = asset.browser_download_url;
-      }
-
-      const nameEl = document.getElementById(t.nameId);
-      if (nameEl && asset.name) {
-        nameEl.textContent = asset.name;
-      }
-
-      const countEl = document.getElementById(t.countId);
-      if (countEl) {
-        if (typeof asset.download_count === "number") {
-          countEl.textContent = asset.download_count.toLocaleString() + " downloads";
-          countEl.classList.remove("count-unavailable");
-        } else {
-          // Exact neutral message required when API is unavailable or unpopulated
-          countEl.textContent = "Download count unavailable";
-          countEl.classList.add("count-unavailable");
-        }
-      }
-    });
-  }
-
-  // Fetch with cache and fallback
-  function loadReleaseData() {
-    let cached = null;
-    try {
-      const stored = sessionStorage.getItem(CACHE_KEY) || localStorage.getItem(CACHE_KEY);
-      if (stored) {
-        cached = JSON.parse(stored);
-      }
-    } catch (_err) {
-      // Storage access blocked or restricted
-    }
-
-    const now = Date.now();
-    if (cached && cached.timestamp && (now - cached.timestamp < CACHE_TTL_MS) && cached.data) {
-      applyReleaseData(cached.data, true);
-      return;
-    }
-
-    // Perform network request with timeout
-    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timeoutId = controller ? setTimeout(function () { controller.abort(); }, 7000) : null;
-
-    fetch(API_URL, {
-      headers: { "Accept": "application/vnd.github.v3+json" },
-      signal: controller ? controller.signal : undefined
-    })
-      .then(function (res) {
-        if (timeoutId) clearTimeout(timeoutId);
-        if (!res.ok) {
-          throw new Error("GitHub API responded with status " + res.status);
-        }
-        return res.json();
-      })
-      .then(function (data) {
-        applyReleaseData(data, true);
-        try {
-          const payload = JSON.stringify({ timestamp: Date.now(), data: data });
-          sessionStorage.setItem(CACHE_KEY, payload);
-        } catch (_e) {
-          // Ignore cache save error
-        }
-      })
-      .catch(function (error) {
-        console.warn("FilePetal release fetch failed, using fallback:", error.message);
-        if (cached && cached.data) {
-          applyReleaseData(cached.data, false);
-        } else {
-          applyReleaseData(FALLBACK_RELEASE, false);
-        }
-      });
-  }
-
-  // OS Detection & Recommendation
-  function detectOS() {
-    const userAgent = (navigator.userAgent || "").toLowerCase();
-    const platform = (navigator.platform || "").toLowerCase();
-
-    const isWindows = userAgent.includes("win") || platform.includes("win");
-    const isMac = userAgent.includes("mac") || platform.includes("mac");
-    const isLinux = (userAgent.includes("linux") || platform.includes("linux")) && !userAgent.includes("android");
-
-    if (isWindows) {
-      highlightPlatform("windows");
-    } else if (isMac) {
-      highlightPlatform("macos");
-      // Check Apple Silicon hint if available via WebGL or userAgentData
-      detectMacArchitecture();
-    } else if (isLinux) {
-      highlightPlatform("linux");
-    }
-  }
-
-  function highlightPlatform(platformId) {
-    const card = document.getElementById("card-" + platformId);
-    if (card) {
-      card.classList.add("detected-system");
-    }
-    const badge = document.getElementById("rec-" + platformId);
-    if (badge) {
-      badge.hidden = false;
-    }
-  }
-
-  function detectMacArchitecture() {
-    // navigator.userAgentData hints (Chromium on Mac)
-    if (navigator.userAgentData && typeof navigator.userAgentData.getHighEntropyValues === "function") {
-      navigator.userAgentData.getHighEntropyValues(["architecture"])
-        .then(function (values) {
-          if (values.architecture === "arm") {
-            markMacChoice("arm64");
-          } else if (values.architecture === "x86") {
-            markMacChoice("x64");
-          }
-        })
-        .catch(function () {});
-    }
-  }
-
-  function markMacChoice(arch) {
-    const pill = document.getElementById("rec-macos-" + arch);
-    if (pill) pill.hidden = false;
-    const parentBox = pill ? pill.closest(".mac-option-box") : null;
-    if (parentBox) parentBox.classList.add("active-mac");
-  }
-
-  // Theme Toggle (Dark / Light)
-  function initTheme() {
-    const toggleBtn = document.getElementById("theme-toggle");
-    if (!toggleBtn) return;
-
-    let savedTheme = null;
-    try {
-      savedTheme = localStorage.getItem("filepetal_theme");
-    } catch (_e) {}
-
-    function applyTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      toggleBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-      toggleBtn.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
-      const themeColor = document.querySelector('meta[name="theme-color"]');
-      if (themeColor) themeColor.setAttribute("content", theme === "dark" ? "#202621" : "#f6f3eb");
-    }
-
-    applyTheme(savedTheme === "dark" ? "dark" : "light");
-
-    toggleBtn.addEventListener("click", function () {
-      const current = document.documentElement.getAttribute("data-theme") || "dark";
-      const next = current === "dark" ? "light" : "dark";
-      applyTheme(next);
-      try {
-        localStorage.setItem("filepetal_theme", next);
-      } catch (_e) {}
-    });
-  }
-
-  // Browser-only radial wheel preview. Sample files are labels and never leave this page.
-  const DEMO_SAMPLES = {
-    image: {
-      name: "coast.jpg",
-      type: "IMAGE",
-      outputs: [["WEBP", "smaller web image"], ["PNG", "lossless image"], ["PDF", "document"], ["DOCX", "editable page"]]
-    },
-    markdown: {
-      name: "README.md",
-      type: "MARKDOWN",
-      outputs: [["HTML", "web page"], ["PDF", "document"], ["TXT", "plain text"], ["PNG", "page image"]]
-    },
-    pdf: {
-      name: "brief.pdf",
-      type: "PDF",
-      outputs: [["DOCX", "editable text"], ["TXT", "plain text"], ["PNG", "page image"], ["JPG", "page image"]]
-    },
-    video: {
-      name: "walkthrough.mp4",
-      type: "VIDEO",
-      outputs: [["GIF", "animation"], ["WEBM", "video"], ["MOV", "video"], ["MP3", "audio track"]]
-    },
-    audio: {
-      name: "voice-note.wav",
-      type: "AUDIO",
-      outputs: [["MP3", "compressed audio"], ["M4A", "audio"], ["OGG", "audio"], ["FLAC", "lossless audio"]]
-    }
+  const SAMPLE_FILES = {
+    image: { name: "sunset.jpg", kind: "IMAGE", outputs: ["WEBP", "PNG", "PDF", "DOCX"], tools: ["Compress image", "Metadata", "Edit photo", "Annotate", "Add background", "Crop", "Redact", "Create PDF", "Create collage", "Read QR codes"] },
+    markdown: { name: "README.md", kind: "MARKDOWN", outputs: ["HTML", "PDF", "TXT", "PNG"], tools: [] },
+    pdf: { name: "brief.pdf", kind: "PDF", outputs: ["DOCX", "TXT", "PNG", "JPG"], tools: ["Compress PDF", "Split pages", "Merge PDFs", "Read QR codes"] },
+    video: { name: "clip.mp4", kind: "VIDEO", outputs: ["WEBM", "MOV", "GIF", "MP3"], tools: ["Compress video", "Metadata", "Remove audio", "Trim", "Crop", "Change speed", "Snapshots", "Split", "Redact", "Join videos"] },
+    audio: { name: "voice.wav", kind: "AUDIO", outputs: ["MP3", "M4A", "OGG", "FLAC"], tools: ["Compress audio", "Metadata", "Normalize", "Trim", "Channels", "Bleep section", "Waveform video"] }
+  };
+  const ACTIONS = ["Float shelf", "Copy files", "Move to folder", "Copy path", "Open in terminal", "Share"];
+  const MODES = {
+    convert: { label: "CONVERT", shortcut: "SHIFT", title: "Choose an output format" },
+    tools: { label: "TOOLS", shortcut: "ALT + SHIFT", title: "Choose a tool" },
+    actions: { label: "ACTIONS", shortcut: "CTRL + SHIFT", title: "Choose a file action" }
   };
 
-  function initDemo() {
-    const stage = document.getElementById("demo-stage");
-    const wheel = document.getElementById("demo-wheel");
-    const petals = document.getElementById("demo-petals");
-    const modeLabel = document.getElementById("demo-mode-label");
-    const centerType = document.getElementById("demo-center-type");
-    const centerName = document.getElementById("demo-center-name");
-    const resultTitle = document.getElementById("demo-result-title");
-    const resultCopy = document.getElementById("demo-result-copy");
-    const resetButton = document.getElementById("demo-reset");
-    const sampleButtons = Array.from(document.querySelectorAll(".demo-file[data-sample]"));
-    if (!stage || !wheel || !petals || !sampleButtons.length) return;
+  function safeRead(key) { try { return localStorage.getItem(key); } catch (_) { return null; } }
+  function safeWrite(key, value) { try { localStorage.setItem(key, value); } catch (_) {} }
 
-    let activeSampleKey = null;
-    let draggingSampleKey = null;
-    let droppedInStage = false;
-
-    function setResult(title, copy) {
-      if (resultTitle) resultTitle.textContent = title;
-      if (resultCopy) resultCopy.textContent = copy;
+  function initTheme() {
+    const button = document.getElementById("theme-toggle");
+    const root = document.documentElement;
+    if (!button) return;
+    function apply(theme) {
+      root.setAttribute("data-theme", theme);
+      button.setAttribute("aria-pressed", String(theme === "dark"));
+      button.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
+      const color = document.querySelector('meta[name="theme-color"]');
+      if (color) color.content = theme === "dark" ? "#20231f" : "#f2f0e9";
     }
-
-    function outputName(filename, extension) {
-      const dot = filename.lastIndexOf(".");
-      const base = dot > 0 ? filename.slice(0, dot) : filename;
-      return base + "." + extension.toLowerCase();
-    }
-
-    function previewOutput(sample, format, button) {
-      const destination = outputName(sample.name, format);
-      petals.querySelectorAll(".demo-petal").forEach(function (petal) {
-        petal.classList.toggle("is-active", petal === button);
-        petal.setAttribute("aria-pressed", petal === button ? "true" : "false");
-      });
-      if (modeLabel) modeLabel.textContent = "Preview: " + format;
-      setResult("Output preview", destination + " would be saved beside " + sample.name + " in the desktop app. This browser preview does not create a file.");
-    }
-
-    function selectSample(key, source) {
-      const sample = DEMO_SAMPLES[key];
-      if (!sample) return;
-      activeSampleKey = key;
-      sampleButtons.forEach(function (button) {
-        const selected = button.dataset.sample === key;
-        button.classList.toggle("is-selected", selected);
-        button.setAttribute("aria-pressed", selected ? "true" : "false");
-      });
-      stage.classList.add("has-file");
-      wheel.hidden = false;
-      if (centerType) centerType.textContent = sample.type;
-      if (centerName) centerName.textContent = sample.name;
-      if (modeLabel) modeLabel.textContent = source === "drag" ? "File picked up" : "Choose an output";
-      if (resetButton) resetButton.hidden = false;
-      petals.replaceChildren();
-
-      sample.outputs.forEach(function (output) {
-        const format = output[0];
-        const note = output[1];
-        const petal = document.createElement("button");
-        petal.type = "button";
-        petal.className = "demo-petal";
-        petal.setAttribute("aria-pressed", "false");
-        petal.setAttribute("aria-label", "Preview " + sample.name + " converted to " + format);
-
-        const formatLabel = document.createElement("span");
-        formatLabel.className = "demo-petal-format";
-        formatLabel.textContent = format;
-        const noteLabel = document.createElement("span");
-        noteLabel.className = "demo-petal-note";
-        noteLabel.textContent = note;
-        petal.append(formatLabel, noteLabel);
-        petal.addEventListener("click", function () { previewOutput(sample, format, petal); });
-        petals.appendChild(petal);
-      });
-
-      setResult("Choose a petal", "Four compatible output previews are ready for " + sample.name + ". Select one to see the result name.");
-    }
-
-    function resetDemo() {
-      activeSampleKey = null;
-      draggingSampleKey = null;
-      droppedInStage = false;
-      sampleButtons.forEach(function (button) {
-        button.classList.remove("is-selected", "is-dragging");
-        button.setAttribute("aria-pressed", "false");
-      });
-      stage.classList.remove("has-file", "is-dragover");
-      wheel.hidden = true;
-      petals.replaceChildren();
-      if (modeLabel) modeLabel.textContent = "Waiting for a file";
-      if (resetButton) resetButton.hidden = true;
-      setResult("Try a sample file", "Click or drag one from the left. Nothing is uploaded or changed.");
-    }
-
-    sampleButtons.forEach(function (button) {
-      const key = button.dataset.sample;
-      button.addEventListener("click", function () { selectSample(key, "click"); });
-      button.addEventListener("dragstart", function (event) {
-        draggingSampleKey = key;
-        droppedInStage = false;
-        button.classList.add("is-dragging");
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = "copy";
-          event.dataTransfer.setData("text/plain", "filepetal-demo:" + key);
-        }
-        selectSample(key, "drag");
-      });
-      button.addEventListener("dragend", function () {
-        button.classList.remove("is-dragging");
-        stage.classList.remove("is-dragover");
-        if (!droppedInStage && activeSampleKey === key && modeLabel) modeLabel.textContent = "Preview ready";
-        draggingSampleKey = null;
-      });
+    apply(safeRead("filepetal_theme") === "dark" ? "dark" : "light");
+    button.addEventListener("click", function () {
+      const theme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      apply(theme);
+      safeWrite("filepetal_theme", theme);
     });
-
-    stage.addEventListener("dragover", function (event) {
-      if (!draggingSampleKey && !(event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files"))) return;
-      event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
-      stage.classList.add("is-dragover");
-      if (draggingSampleKey && draggingSampleKey !== activeSampleKey) selectSample(draggingSampleKey, "drag");
-    });
-    stage.addEventListener("dragleave", function (event) {
-      if (!stage.contains(event.relatedTarget)) stage.classList.remove("is-dragover");
-    });
-    stage.addEventListener("drop", function (event) {
-      if (draggingSampleKey) {
-        event.preventDefault();
-        droppedInStage = true;
-        selectSample(draggingSampleKey, "drop");
-        if (modeLabel) modeLabel.textContent = "Choose an output";
-        setResult("File on the wheel", "Choose one of the petals to preview its output. The sample remains a mockup.");
-      } else if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
-        event.preventDefault();
-        setResult("Sample files only", "This browser demo does not read local files. Pick one of the five sample icons instead.");
-      }
-      stage.classList.remove("is-dragover");
-    });
-
-    if (resetButton) resetButton.addEventListener("click", resetDemo);
   }
 
-  // Document ready initializer
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  function matchAsset(assets, key) {
+    if (!Array.isArray(assets)) return null;
+    return assets.find(function (asset) {
+      const name = (asset.name || "").toLowerCase();
+      if (!name.endsWith(".zip")) return false;
+      if (key === "windows-x64") return name.includes("windows") && name.includes("x64");
+      if (key === "macos-arm64") return name.includes("macos") && (name.includes("arm64") || name.includes("aarch64"));
+      if (key === "macos-x64") return name.includes("macos") && (name.includes("x64") || name.includes("intel") || name.includes("x86_64"));
+      return name.includes("linux") && name.includes("x64");
+    });
+  }
+
+  function initReleaseData() {
+    const status = document.getElementById("api-status-text");
+    if (!status) return;
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}
+    function render(release, live) {
+      const tag = release.tag_name || "latest release";
+      const dot = document.getElementById("api-indicator-dot");
+      status.textContent = live ? "Latest release " + tag + " · live from GitHub" : "Release " + tag + " · showing saved package links";
+      if (dot) dot.className = "status-indicator " + (live ? "live" : "fallback");
+      [
+        ["windows-x64", "windows"], ["macos-arm64", "macos-arm64"],
+        ["macos-x64", "macos-x64"], ["linux-x64", "linux"]
+      ].forEach(function (pair) {
+        const asset = matchAsset(release.assets, pair[0]) || matchAsset(FALLBACK_RELEASE.assets, pair[0]);
+        if (!asset) return;
+        const suffix = pair[1];
+        const button = document.getElementById("btn-" + suffix);
+        const filename = document.getElementById("name-" + suffix);
+        const count = document.getElementById("count-" + suffix);
+        if (button) button.href = asset.browser_download_url;
+        if (filename) filename.textContent = asset.name;
+        if (count) {
+          count.textContent = Number.isFinite(asset.download_count) ? asset.download_count.toLocaleString() + " downloads" : "Download count unavailable";
+          count.classList.toggle("count-unavailable", !Number.isFinite(asset.download_count));
+        }
+      });
+    }
+    const fresh = cached && cached.timestamp && Date.now() - cached.timestamp < CACHE_TTL_MS;
+    if (fresh) render(cached.data, true);
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = controller ? window.setTimeout(function () { controller.abort(); }, 6500) : null;
+    fetch(API_URL, { headers: { Accept: "application/vnd.github+json" }, signal: controller ? controller.signal : undefined })
+      .then(function (response) { if (!response.ok) throw new Error("GitHub returned " + response.status); return response.json(); })
+      .then(function (release) {
+        if (timer) clearTimeout(timer);
+        render(release, true);
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: release })); } catch (_) {}
+      })
+      .catch(function () {
+        if (timer) clearTimeout(timer);
+        if (!fresh) render(cached && cached.data ? cached.data : FALLBACK_RELEASE, false);
+      });
+  }
+
+  function initPlatformHint() {
+    const ua = (navigator.userAgent || "").toLowerCase();
+    const platform = (navigator.platform || "").toLowerCase();
+    if (ua.includes("windows") || platform.includes("win")) show("windows");
+    else if (ua.includes("mac") || platform.includes("mac")) show("macos");
+    else if ((ua.includes("linux") || platform.includes("linux")) && !ua.includes("android")) show("linux");
+    function show(id) {
+      const card = document.getElementById("card-" + id);
+      const badge = document.getElementById("rec-" + id);
+      if (card) card.classList.add("detected-system");
+      if (badge) badge.hidden = false;
+    }
+  }
+
+  function initFaq() {
+    const items = Array.from(document.querySelectorAll(".faq-item"));
+    items.forEach(function (item) {
+      item.addEventListener("toggle", function () {
+        if (!item.open) return;
+        items.forEach(function (other) { if (other !== item) other.open = false; });
+      });
+    });
+  }
+
+  function initDesktopDemo() {
+    const stage = document.getElementById("desktop-stage");
+    if (!stage) return;
+    const wheel = document.getElementById("gesture-wheel");
+    const petals = document.getElementById("wheel-options");
+    const modeName = document.getElementById("wheel-mode");
+    const filename = document.getElementById("wheel-filename");
+    const toast = document.getElementById("desktop-toast");
+    const feedback = document.getElementById("demo-feedback");
+    const files = Array.from(stage.querySelectorAll(".desktop-file"));
+    const previewButtons = Array.from(document.querySelectorAll(".shortcut-button"));
+    let selected = null;
+    let armed = null;
+    let dragging = null;
+    let dragOrigin = null;
+    let liveMode = null;
+    let lastPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const startPositions = new Map();
+
+    function say(message, detail) {
+      if (toast) toast.textContent = message;
+      if (feedback && detail) feedback.textContent = detail;
+    }
+    function setSelected(file, isArmed) {
+      selected = file;
+      files.forEach(function (el) {
+        const active = el === file;
+        el.classList.toggle("is-selected", active);
+        el.setAttribute("aria-pressed", String(active));
+      });
+      if (isArmed) {
+        armed = file;
+        file.classList.add("is-armed");
+        say(file.dataset.name + " picked up. Drag it, then hold a shortcut.", "Picked up " + file.dataset.name + ". Drag inside the desktop and hold Shift, Alt + Shift, or Ctrl + Shift.");
+      }
+    }
+    function modeFromKeys(event) {
+      if (!event.shiftKey) return null;
+      if (event.ctrlKey) return "actions";
+      if (event.altKey) return "tools";
+      return "convert";
+    }
+    function formatOutputName(name, extension) {
+      return name.replace(/\.[^.]+$/, "") + "." + extension.toLowerCase();
+    }
+    function moveWheel(clientX, clientY) {
+      const bounds = stage.getBoundingClientRect();
+      const size = wheel.offsetWidth || Math.min(310, bounds.width - 20);
+      const x = Math.max(size / 2 + 8, Math.min(bounds.width - size / 2 - 8, clientX - bounds.left));
+      const header = document.querySelector(".site-header");
+      const topEdge = Math.max(size / 2 + 8, (header ? header.getBoundingClientRect().bottom : 0) + size / 2 + 8 - bounds.top);
+      const bottomEdge = Math.min(bounds.height - size / 2 - 8, window.innerHeight - size / 2 - 8 - bounds.top);
+      const minY = Math.min(topEdge, bottomEdge);
+      const maxY = Math.max(topEdge, bottomEdge);
+      const y = Math.max(minY, Math.min(maxY, clientY - bounds.top));
+      wheel.style.setProperty("--wheel-x", x + "px");
+      wheel.style.setProperty("--wheel-y", y + "px");
+    }
+    function closeWheel() {
+      if (!wheel) return;
+      wheel.hidden = true;
+      liveMode = null;
+      stage.classList.remove("wheel-open");
+      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", "false"); });
+    }
+    function showWheel(mode, file, clientX, clientY) {
+      const sample = SAMPLE_FILES[file.dataset.file];
+      if (!sample || !wheel || !petals) return;
+      liveMode = mode;
+      const config = MODES[mode];
+      const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
+      const diameter = window.matchMedia("(max-width: 680px)").matches ? Math.min(290, window.innerWidth - 44) : Math.min(310, stage.clientWidth - 20);
+      const radius = Math.max(76, diameter / 2 - 48);
+      petals.replaceChildren();
+      if (modeName) modeName.textContent = config.label;
+      if (filename) filename.textContent = sample.name;
+      choices.forEach(function (label, index) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "wheel-petal";
+        button.style.setProperty("--petal-index", index);
+        const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
+        button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
+        button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
+        button.style.maxWidth = choices.length > 8 ? "72px" : choices.length > 4 ? "82px" : "92px";
+        button.textContent = label;
+        button.setAttribute("aria-label", mode === "convert" ? "Preview conversion to " + label : "Preview " + label);
+        button.addEventListener("click", function () {
+          const message = mode === "convert"
+            ? formatOutputName(sample.name, label) + " would be saved beside the source file. This demo does not create it."
+            : mode === "tools"
+              ? label + " would open in FilePetal. The demo does not edit the sample."
+              : label + " would run on the selected file in the desktop app. This demo does not perform the action.";
+          say(label + " selected", message);
+          closeWheel();
+        });
+        petals.appendChild(button);
+      });
+      if (!choices.length) {
+        const empty = document.createElement("p");
+        empty.className = "wheel-empty";
+        empty.textContent = "No dedicated tool for Markdown files";
+        petals.appendChild(empty);
+      }
+      wheel.hidden = false;
+      stage.classList.add("wheel-open");
+      if (Number.isFinite(clientX) && Number.isFinite(clientY)) moveWheel(clientX, clientY);
+      const control = previewButtons.find(function (button) { return button.dataset.mode === mode; });
+      previewButtons.forEach(function (button) { button.setAttribute("aria-pressed", String(button === control)); });
+      if (mode === "convert") say(config.shortcut + " · " + sample.name, "Convert preview for " + sample.name + ". Hold the shortcut while dragging; select a format to preview its output name.");
+      else if (mode === "tools") say(config.shortcut + " · " + sample.name, sample.tools.length ? "Tools available for " + sample.name + ". Select a tool to see what would open." : "This file type has no dedicated tool in the current app; its conversion wheel still works.");
+      else say(config.shortcut + " · " + sample.name, "The app’s file actions apply to this selected sample. This page previews labels only.");
+    }
+
+    function reset() {
+      closeWheel();
+      dragging = null;
+      dragOrigin = null;
+      armed = null;
+      selected = null;
+      files.forEach(function (file) {
+        file.classList.remove("is-selected", "is-armed", "is-dragging");
+        file.removeAttribute("style");
+        file.setAttribute("aria-pressed", "false");
+      });
+      startPositions.clear();
+      say("Double-click a sample icon to pick it up.", "This is a visual preview only. It does not read, upload, or change local files.");
+    }
+
+    files.forEach(function (file) {
+      file.dataset.name = file.querySelector("span").textContent;
+      file.addEventListener("click", function () { if (!dragging) setSelected(file, false); });
+      file.addEventListener("dblclick", function (event) {
+        event.preventDefault();
+        file.classList.remove("is-armed");
+        setSelected(file, true);
+      });
+      file.addEventListener("pointerdown", function (event) {
+        if (event.button !== 0 || armed !== file) return;
+        dragging = file;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        dragOrigin = { x: event.clientX, y: event.clientY, left: file.offsetLeft, top: file.offsetTop };
+        const stageRect = stage.getBoundingClientRect();
+        const fileRect = file.getBoundingClientRect();
+        startPositions.set(file, { left: fileRect.left - stageRect.left, top: fileRect.top - stageRect.top });
+        file.classList.add("is-dragging");
+        event.preventDefault();
+      });
+      function moveFile(event) {
+        if (dragging !== file || !dragOrigin) return;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        const dx = event.clientX - dragOrigin.x;
+        const dy = event.clientY - dragOrigin.y;
+        if (Math.hypot(dx, dy) > 3) file.classList.add("has-moved");
+        const stageRect = stage.getBoundingClientRect();
+        const fileRect = file.getBoundingClientRect();
+        const width = stage.clientWidth;
+        const height = stage.clientHeight;
+        const origin = startPositions.get(file);
+        const nextLeft = Math.max(4, Math.min(width - fileRect.width - 4, origin.left + dx));
+        const nextTop = Math.max(4, Math.min(height - fileRect.height - 4, origin.top + dy));
+        file.style.left = nextLeft + "px";
+        file.style.top = nextTop + "px";
+        file.style.setProperty("--drag-x", "0px");
+        const mode = modeFromKeys(event);
+        if (mode) showWheel(mode, file, event.clientX, event.clientY);
+        else if (liveMode) closeWheel();
+      }
+      window.addEventListener("pointermove", moveFile);
+      function endDrag() {
+        if (dragging !== file) return;
+        file.classList.remove("is-dragging", "has-moved");
+        const modeAtDrop = liveMode;
+        dragging = null;
+        dragOrigin = null;
+        armed = null;
+        file.classList.remove("is-armed");
+        if (modeAtDrop) say("" + MODES[modeAtDrop].label + " wheel ready", "Select an option from the wheel to preview what the desktop app would do.");
+        else say("File placed on the desktop.", "Your sample icon moved. Hold a modifier shortcut during the drag to open a wheel.");
+      }
+      file.addEventListener("dragstart", function (event) { event.preventDefault(); });
+      window.addEventListener("pointerup", endDrag);
+      window.addEventListener("pointercancel", endDrag);
+    });
+
+    window.addEventListener("keydown", function (event) {
+      if (!dragging) return;
+      const mode = modeFromKeys(event);
+      if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y);
+    });
+    window.addEventListener("keyup", function (event) {
+      if (!liveMode) return;
+      if (!event.shiftKey || liveMode === "tools" && !event.altKey || liveMode === "actions" && !event.ctrlKey) closeWheel();
+    });
+    previewButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        const file = selected || files[0];
+        setSelected(file, false);
+        const rect = file.getBoundingClientRect();
+        showWheel(button.dataset.mode, file, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      });
+    });
+    const resetButton = document.getElementById("demo-reset");
+    if (resetButton) resetButton.addEventListener("click", reset);
+    stage.addEventListener("pointerdown", function (event) {
+      if (event.target === stage && !dragging) {
+        closeWheel();
+        files.forEach(function (file) { file.classList.remove("is-selected"); file.setAttribute("aria-pressed", "false"); });
+        selected = null;
+      }
+    });
   }
 
   function init() {
     initTheme();
-    detectOS();
-    initDemo();
-    loadReleaseData();
+    initReleaseData();
+    initPlatformHint();
+    initFaq();
+    initDesktopDemo();
   }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
 })();

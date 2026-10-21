@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive desktop demo — FilePetal</title>
+  <meta name="description" content="Try FilePetal’s three modifier-key wheels in a desktop-style demo with sample image, Markdown, PDF, video, and audio files.">
+  <meta name="theme-color" content="#f3f1ec">
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./index.html" aria-label="FilePetal home"><img src="./assets/logo.svg" alt="" width="30" height="30"><span>FilePetal</span></a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <a href="./demo.html" aria-current="page">Demo</a><a href="./downloads.html">Downloads</a><a href="./features.html">Features</a><a href="./mac-guide.html">Mac guide</a><a href="./privacy.html">Privacy</a><a href="./faq.html">FAQ</a>
+      </nav>
+      <div class="header-actions"><a class="header-download" href="./downloads.html">Get FilePetal</a><button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Switch to dark theme" title="Switch theme"><svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.4A8.5 8.5 0 0 1 8.6 3.5 8.5 8.5 0 1 0 20.5 15.4Z"/></svg><svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></button></div>
+    </div>
+  </header>
+
+  <main id="main-content" class="content-page demo-page">
+    <header class="page-heading">
+      <p class="eyebrow">Interactive preview</p>
+      <h1>Try the FilePetal wheel.</h1>
+      <p>This is the Windows gesture preview. Double-click a sample icon to pick it up, then drag while holding a shortcut. macOS and Linux use the companion window.</p>
+    </header>
+
+    <section class="demo-workspace" aria-label="FilePetal desktop gesture demo">
+      <div class="desktop-window-bar">
+        <span class="desktop-app-title"><img src="./assets/logo.svg" alt="" width="16" height="16">FilePetal desktop preview</span>
+        <span class="desktop-window-note">Windows mock · sample files</span>
+        <span class="window-controls" aria-hidden="true"><i>−</i><i>□</i><i>×</i></span>
+      </div>
+      <div class="desktop-stage" id="desktop-stage" aria-label="Interactive desktop area">
+        <div class="desktop-files" id="desktop-files" aria-label="Sample files on the desktop">
+          <button class="desktop-file" type="button" draggable="true" data-file="image" aria-pressed="false" aria-label="sunset.jpg, image file">
+            <svg class="file-art file-art-image" viewBox="0 0 52 60" aria-hidden="true"><path class="file-paper" d="M8 2h24l12 12v42H8z"/><path class="file-fold" d="M32 2v12h12"/><rect class="file-preview" x="13" y="21" width="26" height="20" rx="2"/><circle class="file-sun" cx="31" cy="27" r="3"/><path class="file-hill" d="m14 38 8-9 7 7 4-4 6 6"/><text class="file-extension" x="26" y="51">JPG</text></svg>
+            <span>sunset.jpg</span>
+          </button>
+          <button class="desktop-file" type="button" draggable="true" data-file="markdown" aria-pressed="false" aria-label="README.md, Markdown file">
+            <svg class="file-art file-art-code" viewBox="0 0 52 60" aria-hidden="true"><path class="file-paper" d="M8 2h24l12 12v42H8z"/><path class="file-fold" d="M32 2v12h12"/><path class="file-code" d="m21 26-6 5 6 5m10-10 6 5-6 5m-2-13-6 16"/><text class="file-extension" x="26" y="51">MD</text></svg>
+            <span>README.md</span>
+          </button>
+          <button class="desktop-file" type="button" draggable="true" data-file="pdf" aria-pressed="false" aria-label="brief.pdf, PDF file">
+            <svg class="file-art file-art-pdf" viewBox="0 0 52 60" aria-hidden="true"><path class="file-paper" d="M8 2h24l12 12v42H8z"/><path class="file-fold" d="M32 2v12h12"/><path class="file-lines" d="M16 25h19M16 31h19M16 37h14"/><text class="file-extension" x="26" y="51">PDF</text></svg>
+            <span>brief.pdf</span>
+          </button>
+          <button class="desktop-file" type="button" draggable="true" data-file="video" aria-pressed="false" aria-label="clip.mp4, video file">
+            <svg class="file-art file-art-video" viewBox="0 0 52 60" aria-hidden="true"><path class="file-paper" d="M8 2h24l12 12v42H8z"/><path class="file-fold" d="M32 2v12h12"/><rect class="file-media" x="14" y="23" width="20" height="15" rx="2"/><path class="file-play" d="m22 27 7 4-7 4z"/><text class="file-extension" x="26" y="51">MP4</text></svg>
+            <span>clip.mp4</span>
+          </button>
+          <button class="desktop-file" type="button" draggable="true" data-file="audio" aria-pressed="false" aria-label="voice.wav, audio file">
+            <svg class="file-art file-art-audio" viewBox="0 0 52 60" aria-hidden="true"><path class="file-paper" d="M8 2h24l12 12v42H8z"/><path class="file-fold" d="M32 2v12h12"/><path class="file-wave" d="M15 31h3m4-7v14m5-18v22m5-16v10m5-7v4"/><text class="file-extension" x="26" y="51">WAV</text></svg>
+            <span>voice.wav</span>
+          </button>
+        </div>
+
+        <div class="gesture-wheel" id="gesture-wheel" hidden aria-label="FilePetal wheel preview">
+          <div class="wheel-options" id="wheel-options"></div>
+          <div class="wheel-center"><small id="wheel-mode">CONVERT</small><strong id="wheel-filename">sunset.jpg</strong><span>Select a petal</span></div>
+        </div>
+
+        <div class="desktop-toast" id="desktop-toast" aria-live="polite">Double-click a sample file to pick it up.</div>
+      </div>
+      <div class="desktop-taskbar" aria-hidden="true">
+        <span class="taskbar-start"><i></i><i></i><i></i><i></i></span>
+        <span class="taskbar-search">Search</span>
+        <span class="taskbar-app"><img src="./assets/logo.svg" alt="" width="21" height="21"> FilePetal demo</span>
+        <span class="taskbar-state">Preview</span>
+      </div>
+    </section>
+
+    <div class="demo-controls">
+      <div>
+        <p class="control-heading">Try a wheel</p>
+        <p class="control-copy">Select a sample, then press a shortcut while dragging—or click a key to preview that wheel.</p>
+      </div>
+      <div class="shortcut-buttons" aria-label="Preview FilePetal shortcuts">
+        <button type="button" class="shortcut-button" data-mode="convert" aria-pressed="false"><kbd>Shift</kbd><span>Convert</span></button>
+        <button type="button" class="shortcut-button" data-mode="tools" aria-pressed="false"><kbd>Alt + Shift</kbd><span>Tools</span></button>
+        <button type="button" class="shortcut-button" data-mode="actions" aria-pressed="false"><kbd>Ctrl + Shift</kbd><span>Actions</span></button>
+      </div>
+    </div>
+    <div class="demo-feedback" id="demo-feedback" role="status" aria-live="polite">This is a visual preview. It does not open or change real files.</div>
+    <button class="text-button demo-reset" id="demo-reset" type="button">Reset desktop</button>
+  </main>
+
+  <footer class="site-footer"><a class="footer-brand" href="./index.html"><img src="./assets/logo.svg" alt="" width="24" height="24"> FilePetal</a><span>Open source under the MIT License.</span><a href="https://github.com/Whatthefook/FilePetal" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></footer>
+</body>
+</html>

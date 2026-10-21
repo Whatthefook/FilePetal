@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy — FilePetal</title><meta name="description" content="How FilePetal processes files locally and what the download website requests from GitHub."><meta name="theme-color" content="#f3f1ec">
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg"><link rel="stylesheet" href="./style.css"><script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="./index.html" aria-label="FilePetal home"><img src="./assets/logo.svg" alt="" width="30" height="30"><span>FilePetal</span></a><nav class="site-nav" aria-label="Main navigation"><a href="./demo.html">Demo</a><a href="./downloads.html">Downloads</a><a href="./features.html">Features</a><a href="./mac-guide.html">Mac guide</a><a href="./privacy.html" aria-current="page">Privacy</a><a href="./faq.html">FAQ</a></nav><div class="header-actions"><a class="header-download" href="./downloads.html">Get FilePetal</a><button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Switch to dark theme" title="Switch theme"><svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.4A8.5 8.5 0 0 1 8.6 3.5 8.5 8.5 0 1 0 20.5 15.4Z"/></svg><svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg></button></div></div></header>
+  <main id="main-content" class="content-page">
+    <header class="page-heading"><p class="eyebrow">Privacy and files</p><h1>Your files stay on your device.</h1><p>FilePetal’s desktop conversions and editing tools run locally. The website and desktop app make separate network requests for separate purposes.</p></header>
+    <section class="privacy-copy">
+      <article><h2>Desktop app</h2><p>The app does not upload selected files or conversion results to a cloud converter. It writes outputs locally, leaving the source files unchanged. Some capabilities need local tools such as FFmpeg; those are not included in current release ZIPs.</p><p>There is no required FilePetal account or app telemetry in this build.</p></article>
+      <article><h2>Download website</h2><p>The static site asks GitHub’s public Releases API for the latest release links and cumulative asset download counts. Download buttons take you to GitHub Releases. These counts are total asset downloads, not a count of unique people or installed copies.</p></article>
+      <article><h2>Demo page</h2><p>The desktop demo uses five labels and icon drawings built into the page. It does not read, upload, or convert files from your computer.</p></article>
+      <article><h2>Settings and updates</h2><p>Preferences are stored in your local user profile. The current app does not automatically check or install updates. See <a href="./downloads.html">how to update a ZIP installation</a>.</p></article>
+    </section>
+    <p class="external-link-row"><a href="https://github.com/Whatthefook/FilePetal/blob/main/docs/offline-setup.md" target="_blank" rel="noopener noreferrer">Read the offline setup notes on GitHub ↗</a></p>
+  </main>
+  <footer class="site-footer"><a class="footer-brand" href="./index.html"><img src="./assets/logo.svg" alt="" width="24" height="24"> FilePetal</a><span>Open source under the MIT License.</span><a href="https://github.com/Whatthefook/FilePetal" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></footer>
+</body>
+</html>

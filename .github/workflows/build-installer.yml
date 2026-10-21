@@ -42,16 +42,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          version="$(python - <<'PY'
-          import re
-          from pathlib import Path
-          text = Path("tangerine/paths.py").read_text(encoding="utf-8")
-          match = re.search(r'^APP_VERSION\s*=\s*["\']([^"\']+)', text, re.MULTILINE)
-          if not match:
-              raise SystemExit("APP_VERSION is missing")
-          print(match.group(1))
-          PY
-          )"
+          version="$(python -c 'import ast; from pathlib import Path; module=ast.parse(Path("tangerine/paths.py").read_text(encoding="utf-8")); print(next(node.value.value for node in module.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "APP_VERSION" for target in node.targets)))')"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
             echo "Tag $GITHUB_REF_NAME must match APP_VERSION" >&2

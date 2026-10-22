@@ -252,7 +252,7 @@
     }
     function placeWheel(clientX, clientY) {
       const bounds = stage.getBoundingClientRect();
-      const size = wheel.offsetWidth || 300;
+      const size = wheel.offsetWidth || 280;
       const half = size / 2;
       const pointerX = clientX - bounds.left;
       const edgePadding = 10;
@@ -274,17 +274,17 @@
       const y = minY <= maxY
         ? Math.max(minY, Math.min(maxY, pointerY))
         : Math.max(half + 4, Math.min(bounds.height - half - 4, pointerY));
-      wheel.style.setProperty("--wheel-x", x + "px");
-      wheel.style.setProperty("--wheel-y", y + "px");
+      wheel.style.left = Math.round(x - half) + "px";
+      wheel.style.top = Math.round(y - half) + "px";
     }
     function closeWheel() {
       if (!wheel) return;
       if (dropTarget) dropTarget.classList.remove("is-drop-target");
       dropTarget = null;
       wheel.hidden = true;
-      // Tear down the composited backdrop-filter/shadow layer as well as hiding it.
-      // Chromium can otherwise leave a dark after-image where this transformed wheel was painted.
-      if (wheel.isConnected) wheel.remove();
+      wheel.setAttribute("aria-hidden", "true");
+      if (wheel.contains(document.activeElement)) document.activeElement.blur();
+      petals.replaceChildren();
       liveMode = null;
       wheelPinned = false;
       wheelPositioned = false;
@@ -302,13 +302,16 @@
       const config = MODES[mode];
       if (needsRender) {
         const choices = mode === "convert" ? sample.outputs : mode === "tools" ? sample.tools : ACTIONS;
-        const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(240, stage.clientWidth - 20));
+        const diameter = Math.min(stage.clientWidth < 520 ? 260 : 280, Math.max(220, stage.clientWidth - 24));
         wheel.style.width = diameter + "px";
+        wheel.style.height = diameter + "px";
         const center = wheel.querySelector(".wheel-center");
         if (center) {
           const centerSize = Math.round(diameter * 0.34);
           center.style.width = centerSize + "px";
           center.style.height = centerSize + "px";
+          center.style.left = Math.round((diameter - centerSize) / 2) + "px";
+          center.style.top = Math.round((diameter - centerSize) / 2) + "px";
         }
         const radius = Math.max(68, diameter / 2 - (choices.length > 8 ? 34 : 45));
         const petalSize = choices.length > 8 ? 46 : choices.length > 4 ? 52 : 58;
@@ -322,8 +325,8 @@
           button.dataset.mode = mode;
           if (mode === "convert") button.dataset.outputFormat = label;
           const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
-          button.style.left = "calc(50% + " + Math.cos(angle) * radius + "px)";
-          button.style.top = "calc(50% + " + Math.sin(angle) * radius + "px)";
+          button.style.left = Math.round(diameter / 2 + Math.cos(angle) * radius - petalSize / 2) + "px";
+          button.style.top = Math.round(diameter / 2 + Math.sin(angle) * radius - petalSize / 2) + "px";
           button.style.width = petalSize + "px";
           button.style.minHeight = petalSize + "px";
           button.style.maxWidth = petalSize + "px";
@@ -351,8 +354,8 @@
         }
         renderedWheelKey = renderKey;
       }
-      if (!wheel.isConnected) stage.insertBefore(wheel, toast || null);
       wheel.hidden = false;
+      wheel.setAttribute("aria-hidden", "false");
       stage.classList.add("wheel-open");
       if (!wheelPositioned && Number.isFinite(clientX) && Number.isFinite(clientY)) {
         placeWheel(clientX, clientY);

@@ -244,7 +244,7 @@
       say("Created " + outputName, "Demo copy " + outputCopies + " added to the desktop. The wheel closed; repeat the gesture to make another mock copy. No real file was converted or written.");
     }
     function setDropTarget(target) {
-      const nextTarget = target && target.closest ? target.closest(".wheel-petal[data-mode='convert']") : null;
+      const nextTarget = target && target.closest ? target.closest(".wheel-petal") : null;
       if (dropTarget === nextTarget) return;
       if (dropTarget) dropTarget.classList.remove("is-drop-target");
       dropTarget = nextTarget;
@@ -313,8 +313,9 @@
           center.style.left = Math.round((diameter - centerSize) / 2) + "px";
           center.style.top = Math.round((diameter - centerSize) / 2) + "px";
         }
-        const radius = Math.max(68, diameter / 2 - (choices.length > 8 ? 34 : 45));
-        const petalSize = choices.length > 8 ? 46 : choices.length > 4 ? 52 : 58;
+        const radius = choices.length > 6 ? 94 : 92;
+        const petalW = choices.length > 8 ? 58 : choices.length > 4 ? 68 : 62;
+        const petalH = choices.length > 8 ? 28 : 34;
         petals.replaceChildren();
         if (modeName) modeName.textContent = config.label;
         if (filename) filename.textContent = fileName;
@@ -325,12 +326,11 @@
           button.dataset.mode = mode;
           if (mode === "convert") button.dataset.outputFormat = label;
           const angle = (Math.PI * 2 * index / choices.length) - Math.PI / 2;
-          button.style.left = Math.round(diameter / 2 + Math.cos(angle) * radius - petalSize / 2) + "px";
-          button.style.top = Math.round(diameter / 2 + Math.sin(angle) * radius - petalSize / 2) + "px";
-          button.style.width = petalSize + "px";
-          button.style.minHeight = petalSize + "px";
-          button.style.maxWidth = petalSize + "px";
-          button.style.fontSize = choices.length > 8 ? "8px" : "9px";
+          button.style.left = Math.round(diameter / 2 + Math.cos(angle) * radius - petalW / 2) + "px";
+          button.style.top = Math.round(diameter / 2 + Math.sin(angle) * radius - petalH / 2) + "px";
+          button.style.width = petalW + "px";
+          button.style.height = petalH + "px";
+          button.style.fontSize = choices.length > 8 ? "8px" : choices.length > 6 ? "9px" : "10px";
           button.textContent = label;
           button.setAttribute("aria-label", mode === "convert" ? "Create demo copy as " + label : "Preview " + label);
           button.addEventListener("click", function () {
@@ -392,9 +392,10 @@
       const fileRect = dragging.getBoundingClientRect();
       dragging.style.left = Math.max(4, Math.min(stage.clientWidth - fileRect.width - 4, dragOrigin.left + dx)) + "px";
       dragging.style.top = Math.max(4, Math.min(stage.clientHeight - fileRect.height - 4, dragOrigin.top + dy)) + "px";
-      const mode = modeFromKeys(event);
-      if (mode) showWheel(mode, dragging, event.clientX, event.clientY, false);
-      else if (!wheelPinned && liveMode) closeWheel();
+      if (!liveMode) {
+        const mode = modeFromKeys(event);
+        if (mode) showWheel(mode, dragging, event.clientX, event.clientY, false);
+      }
       const hovered = document.elementFromPoint(event.clientX, event.clientY);
       setDropTarget(hovered);
       const pointerOutside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
@@ -408,7 +409,7 @@
       const hit = Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
         ? document.elementFromPoint(event.clientX, event.clientY)
         : null;
-      const droppedPetal = hit && hit.closest ? hit.closest(".wheel-petal[data-mode='convert']") : null;
+      const droppedPetal = hit && hit.closest ? hit.closest(".wheel-petal") : null;
       if (dropTarget) dropTarget.classList.remove("is-drop-target");
       dropTarget = null;
       file.classList.remove("is-dragging", "has-moved");
@@ -416,9 +417,19 @@
       dragOrigin = null;
       activePointerId = null;
       if (droppedPetal && didMove) {
-        wheelPinned = true;
-        createDemoOutput(file, droppedPetal.dataset.outputFormat);
-        return;
+        const petalMode = droppedPetal.dataset.mode;
+        if (petalMode === "convert") {
+          wheelPinned = true;
+          createDemoOutput(file, droppedPetal.dataset.outputFormat);
+          return;
+        } else {
+          const label = droppedPetal.textContent.trim();
+          say(label + " selected", petalMode === "tools"
+            ? label + " would open in FilePetal. The demo does not edit the sample."
+            : label + " would run on the selected file in the desktop app.");
+          closeWheel();
+          return;
+        }
       }
       if (didMove) {
         setSelected(file);
@@ -473,15 +484,14 @@
         return;
       }
       if (!dragging) return;
+      if (event.key === "Alt") event.preventDefault();
       const mode = modeFromKeys(event);
       if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y, false);
-      else if (!wheelPinned) closeWheel();
     });
     window.addEventListener("keyup", function (event) {
-      if (!dragging || wheelPinned) return;
-      const mode = modeFromKeys(event);
-      if (mode) showWheel(mode, dragging, lastPointer.x, lastPointer.y, false);
-      else closeWheel();
+      if (event.key === "Escape") {
+        closeWheel();
+      }
     });
     window.addEventListener("blur", function () {
       if (dragging) endDrag({ pointerId: activePointerId });

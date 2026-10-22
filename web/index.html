@@ -12,8 +12,8 @@
   <meta property="og:image" content="./assets/wheel-light.png">
   <meta property="og:url" content="https://whatthefook.github.io/FilePetal/">
   <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
-  <link rel="stylesheet" href="./style.css?v=20261022-6">
-  <script src="./app.js?v=20261022-6" defer></script>
+  <link rel="stylesheet" href="./style.css?v=20261022-7">
+  <script src="./app.js?v=20261022-7" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -23,7 +23,12 @@
         <img src="./assets/logo.svg" alt="" width="30" height="30">
         <span>FilePetal</span>
       </a>
-      <a class="header-download" href="#downloads">Download</a>
+      <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+        <button class="theme-toggle-btn" id="theme-toggle" type="button" aria-label="Toggle light or dark theme" title="Toggle theme">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <a class="header-download" href="#downloads">Download</a>
+      </div>
     </div>
   </header>
 
